@@ -7,54 +7,59 @@ import (
 	"os"
 	"strings"
 	"time"
+	"path/filepath"
 
 	"github.com/mattn/go-isatty"
 )
-
-type GetWeatherFunc func(location, apiKey string) (*WeatherAPIResponse, error)
 
 // nowFunc is a variable that holds the function to get the current time.
 // It can be overridden in tests for deterministic behavior.
 var nowFunc = time.Now
 
+func ProcessArgs(args[] string) (*Config, error) {
+  configPath, err := UserConfigPath()
 
-func main() {
-	configPath, _ := UserConfigPath()
-
-	args := []string{}
-
-	// Check for help flag first
-	for _, arg := range os.Args[1:] {
-		if arg == "-h" || arg == "--help" {
+	// Custom parsing has to be refactored...
+	for i := 1; i < len(args); i++ {
+		switch args[i] {
+		case "-h", "--help":
 			displayHelp()
 			os.Exit(0)
-		}
-	}
-
-	// Custom parsing to find the config path early
-	for i := 1; i < len(os.Args); i++ {
-		switch os.Args[i] {
 		case "-c", "--config":
-			if i+1 < len(os.Args) {
-				configPath.Custom = os.Args[i+1]
+			if i+1 < len(args) {
+				if filepath.IsAbs(args[i+1]) {
+					configPath.Custom = args[i+1]
+				} else {
+					configPath.Custom = "./"+args[i+1]
+				}
 				i++ // Skip the path argument
 			} else {
-				log.Fatalf("Error: %s flag requires a path", os.Args[i])
+				log.Fatalf("Error: %s flag requires a path", args[i-1])
 			}
-		default:
-			args = append(args, os.Args[i])
 		}
 	}
-
-	//Prepend the program name to the filtered args
-	args = append([]string{os.Args[0]}, args...)
 
 	config, err := LoadConfig(configPath)
 	if err != nil {
-		fmt.Errorf("Could not load file: %w", err)
-		os.Exit(1)
+		return nil, err
+	}
+	
+	for i, arg := range args[1:] {
+		if arg == "--json" {
+			config.IsOutputJSON = true
+		} else if !strings.HasPrefix(arg, "-") && strings.HasPrefix(args[i-1], "-") {
+			config.Location = arg
+		}
 	}
 
+	if config.Location == "" {
+		return nil, fmt.Errorf("no location provided. Please provide a location as an argument or set a default in config.json")
+	}
+	
+	if !isatty.IsTerminal(os.Stdout.Fd()) {
+		config.IsOutputJSON = true
+	}
+	
 	// Configure syslog if enabled
 	if config.Logger {
 		syslogWriter, err := syslog.New(syslog.LOG_NOTICE|syslog.LOG_DAEMON, "wayther")
@@ -66,62 +71,43 @@ func main() {
 		}
 	}
 
-	// Run the application logic with actual dependencies
-	output, err := runApp(args, config, GetWeather)
-	if err != nil {
-		log.Fatalf("Application error: %v", err)
-	}
-
-	fmt.Println(output)
-
-	// format := "test: %s %s %d"
-	// value  := []any{"worked", "NA",3}
-	//fmt.Println(config.CurrentFields[1])
-	//config.CurrentFields[1] = 12
-	//fmt.Printf(config.CurrentFormat, config.CurrentFields...)
-
+	return config, nil
 }
 
-func runApp(args []string, config *Config, getWeather GetWeatherFunc) (string, error) {
-	var location string
-	jsonOutput := false
 
-	// Parse command-line arguments
-	for _, arg := range args[1:] {
-		if arg == "--json" {
-			jsonOutput = true
-		} else if !strings.HasPrefix(arg, "-") {
-			location = arg
-		}
-	}
+func runApp(config *Config) (string, error) {
 
-	if !isatty.IsTerminal(os.Stdout.Fd()) {
-		jsonOutput = true
-	}
-
-	// If location is not provided via command line, use the one from config
-	if location == "" {
-		location = config.Location
-	}
-
-	if location == "" {
-		return "", fmt.Errorf("no location provided. Please provide a location as an argument or set a default in config.json")
-	}
-
-	weather, err := getWeather(location, config.APIKey)
+	//call the weather API
+	weather, err := GetWeather(config.Location, config.APIKey)
 	if err != nil {
-		if jsonOutput {
-			fmt.Printf("{\"text\":\"🤔 ❓\",\"tooltip\":\" error fetching weather: %s \"}", err)
-			os.Exit(0)
-		} else {
-			return "", fmt.Errorf("error fetching weather2: %w", err)
-		}
+		return "", err
 	}
 
 	// Format output based on flags or TTY
-	if jsonOutput {
+	if config.IsOutputJSON {
 		return formatJSON(weather)
 	}
-
 	return formatTable(weather), nil
+}
+
+
+func main() {
+
+	// Process the Args and get a config
+	config, err := ProcessArgs(os.Args)
+	if err != nil {
+		log.Fatalf("Config error: %v", err)
+	}
+
+	// Run the application logic with actual dependencies
+	output, err := runApp(config)
+	if err != nil {
+		if config.IsOutputJSON {
+			output = fmt.Sprintf("{\"text\":\"🤔 ❓\",\"tooltip\":\" error fetching weather: %s \"}", err)	
+		} else {
+		  log.Fatalf("Application error: %v", err)
+		}
+	}
+
+	fmt.Println(output)
 }
