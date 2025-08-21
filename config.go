@@ -17,9 +17,9 @@ type Config struct {
 	APIKey         string   `json:"apiKey,omitempty"`
 	Location       string   `json:"location"`
 	Logger         bool     `json:"logger"`
-	CurrentFmt     string   `json:"currentFmt,omitempty`
+	CurrentFmt     string   `json:"currentFmt,omitempty"`
 	CurrentFields  []any    `json:"current,omitempty"`
-	ForecastFmt    string   `json:"forecastFmt,omitempty`
+	ForecastFmt    string   `json:"forecastFmt,omitempty"`
 	ForecastFields []any    `json:"forecast,omitempty"`
 	IsOutputJSON   bool			`json:"outputJSON,omitempty"`
 }

@@ -7,59 +7,54 @@ import (
 	"os"
 	"strings"
 	"time"
-	"path/filepath"
 
 	"github.com/mattn/go-isatty"
+	"github.com/spf13/cobra"
 )
 
 // nowFunc is a variable that holds the function to get the current time.
 // It can be overridden in tests for deterministic behavior.
 var nowFunc = time.Now
 
-func ProcessArgs(args[] string) (*Config, error) {
-  configPath, err := UserConfigPath()
+var rootCmd = &cobra.Command{
+	Use:   "wayther [Location]",
+	Short: "A simple weather API client",
+	Long: `wayther is a CLI tool for retrieving current weather and forecasts.
 
-	// Custom parsing has to be refactored...
-	for i := 1; i < len(args); i++ {
-		switch args[i] {
-		case "-h", "--help":
-			displayHelp()
-			os.Exit(0)
-		case "-c", "--config":
-			if i+1 < len(args) {
-				if filepath.IsAbs(args[i+1]) {
-					configPath.Custom = args[i+1]
-				} else {
-					configPath.Custom = "./"+args[i+1]
-				}
-				i++ // Skip the path argument
-			} else {
-				log.Fatalf("Error: %s flag requires a path", args[i-1])
-			}
-		}
-	}
+You can provide location as argument.
+Multiple options can be applied simultaneously.
+
+Configuration:
+  The application uses a configuration file to store your WeatherAPI key and default location.
+  If no configuration file is found, you will be prompted to create one interactively.
+  The 'logger' key in the config (boolean, defaults to false) enables syslog output if true.`,
+	RunE: runApp,
+}
+
+func init() {
+	rootCmd.Flags().StringP("config", "c", "", "Provide a custom config")
+	rootCmd.Flags().Bool("json", false, "Convert text to lowercase")  
+}
+
+func runApp(cmd *cobra.Command, args []string) error {
+
+	configPath, err := UserConfigPath()	
+	configPath.Custom, _ = cmd.Flags().GetString("config")	
 
 	config, err := LoadConfig(configPath)
 	if err != nil {
-		return nil, err
-	}
-	
-	for i, arg := range args[1:] {
-		if arg == "--json" {
-			config.IsOutputJSON = true
-		} else if !strings.HasPrefix(arg, "-") && strings.HasPrefix(args[i-1], "-") {
-			config.Location = arg
-		}
+		return err 
 	}
 
-	if config.Location == "" {
-		return nil, fmt.Errorf("no location provided. Please provide a location as an argument or set a default in config.json")
-	}
-	
+	config.IsOutputJSON, _ =cmd.Flags().GetBool("json")
 	if !isatty.IsTerminal(os.Stdout.Fd()) {
 		config.IsOutputJSON = true
 	}
-	
+
+	if len(args) > 0 {
+		config.Location = strings.Join(args, " ")
+	}
+
 	// Configure syslog if enabled
 	if config.Logger {
 		syslogWriter, err := syslog.New(syslog.LOG_NOTICE|syslog.LOG_DAEMON, "wayther")
@@ -71,43 +66,29 @@ func ProcessArgs(args[] string) (*Config, error) {
 		}
 	}
 
-	return config, nil
-}
-
-
-func runApp(config *Config) (string, error) {
-
-	//call the weather API
 	weather, err := GetWeather(config.Location, config.APIKey)
 	if err != nil {
-		return "", err
+		if config.IsOutputJSON {
+			fmt.Printf("{\"text\":\"🤔 ❓\",\"tooltip\":\" error fetching weather: %s \"}", err)
+			os.Exit(1)
+		}
+		return err 
 	}
 
 	// Format output based on flags or TTY
 	if config.IsOutputJSON {
-		return formatJSON(weather)
+		fmt.Println(formatJSON(weather))
+	} else {
+		fmt.Println(formatTable(weather))
 	}
-	return formatTable(weather), nil
+
+	return nil
 }
 
 
 func main() {
-
-	// Process the Args and get a config
-	config, err := ProcessArgs(os.Args)
-	if err != nil {
-		log.Fatalf("Config error: %v", err)
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
-
-	// Run the application logic with actual dependencies
-	output, err := runApp(config)
-	if err != nil {
-		if config.IsOutputJSON {
-			output = fmt.Sprintf("{\"text\":\"🤔 ❓\",\"tooltip\":\" error fetching weather: %s \"}", err)	
-		} else {
-		  log.Fatalf("Application error: %v", err)
-		}
-	}
-
-	fmt.Println(output)
 }
