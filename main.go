@@ -12,6 +12,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// isTerminal can be overridden in tests for deterministic behavior.
+var isTerminal = isatty.IsTerminal
+
 // nowFunc is a variable that holds the function to get the current time.
 // It can be overridden in tests for deterministic behavior.
 var nowFunc = time.Now
@@ -47,7 +50,7 @@ func runApp(cmd *cobra.Command, args []string) error {
 	}
 
 	config.IsOutputJSON, _ =cmd.Flags().GetBool("json")
-	if !isatty.IsTerminal(os.Stdout.Fd()) {
+	if !isTerminal(os.Stdout.Fd()) {
 		config.IsOutputJSON = true
 	}
 
@@ -70,7 +73,7 @@ func runApp(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		if config.IsOutputJSON {
 			fmt.Printf("{\"text\":\"🤔 ❓\",\"tooltip\":\" error fetching weather: %s \"}", err)
-			os.Exit(1)
+			os.Exit(0)
 		}
 		return err 
 	}
@@ -87,8 +90,5 @@ func runApp(cmd *cobra.Command, args []string) error {
 
 
 func main() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	rootCmd.Execute()
 }

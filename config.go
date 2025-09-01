@@ -43,7 +43,7 @@ func UserConfigPath() (ConfigPath, error) {
 	return configPath, nil
 }
 
-func LoadConfig(configPath ConfigPath) (*Config, error) {
+var LoadConfig = func(configPath ConfigPath) (*Config, error) {
 	var err error
 
 	//Load or Create the defaultConfig

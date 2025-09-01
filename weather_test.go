@@ -8,6 +8,8 @@ import (
 )
 
 func TestGetWeather(t *testing.T) {
+
+
 	// Create a mock HTTP server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check the request path and query parameters

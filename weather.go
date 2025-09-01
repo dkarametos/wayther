@@ -158,8 +158,7 @@ type Hour struct {
 	DiffRad      float64   `json:"diff_rad"`
 }
 
-// GetWeather fetches weather data for a given location and API key
-func GetWeather(location, apiKey string) (*WeatherAPIResponse, error) {
+var GetWeather = func(location, apiKey string) (*WeatherAPIResponse, error) {
 	url := fmt.Sprintf("%s?key=%s&q=%s&days=2&aqi=no&alerts=no", weatherAPIURL, apiKey, location)
 
 	resp, err := http.Get(url)
