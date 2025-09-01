@@ -1,18 +1,28 @@
 # Wayther
 
+## Table of Contents
+
+*   [Why wayther?](#why-wayther)
+*   [Configuration](#configuration)
+*   [Building](#building)
+*   [Usage](#usage)
+    *   [waybar Integration](#waybar-integration)
+*   [Testing](#testing)
+*   [License](#license)
+
 ## Why wayther?
-The name "Wayther" is a portmanteau of "Waybar" and "Weather". This application was specifically designed with the intention of being used to display weather information on a Waybar, a highly customizable status bar for Wayland compositors.
+The name "Wayther" is a portmanteau of "[waybar](https://github.com/Alexays/waybar)" and "weather". This application was specifically designed with the intention of being used to display weather information on a waybar, a highly customizable status bar for Wayland compositors.
 
 A command-line application to get the current weather for a given location, providing output in JSON format.
 
 ## Configuration
 
-This application uses the WeatherAPI.com for weather data. You will need to obtain a free API key from their website.
+This application uses the [weatherapi.com](https://www.weatherapi.com/) for weather data. You will need to obtain a free API key from their website.
 
 The application now supports robust configuration merging:
-*   **Default Configuration:** A default configuration file is located at `XDG_CONFIG_HOME/wayther/config.json`.
+*   **Default Configuration:** A default configuration file is located at `XDG_CONFIG_HOME/wayther/config.json` (typically `~/.config/wayther/config.json` on Linux).
 *   **Custom Configurations:** You can specify a custom configuration file using the `-c` or `--config` flag.
-*   **Merging Logic:** When a custom configuration is used, its values will override those in the default configuration. If a key is missing in the custom configuration, the value from the default configuration will be used. This means keys in custom configurations are optional if they are defined in the default.
+*   **Merging Logic:** When a custom configuration is used, its values will override those in the default configuration. If the API key is missing in the custom configuration, the value from the default configuration will be used. This means keys in custom configurations are optional.
 
 The first time you run the application without an existing configuration, it will prompt you to enter details interactively. If a default configuration with an API key already exists, the interactive setup will only ask for the location, skipping the API key prompt.
 
@@ -52,7 +62,7 @@ By default, if you are in a terminal, the output will be a human-readable table:
 │ Current:                  │
 ├───────────────────────────┤
 │ 🌦️ 24.0°                  │
-│ Sandweiler - Luxembourg   │
+│ Athens - Greece           │
 ├───────────────────────────┤
 │ Hourly Forecast:          │
 ├───────────────────────────┤
@@ -83,7 +93,7 @@ By default, if you are in a terminal, the output will be a human-readable table:
 └───────────────────────────┘
 ```
 
-If you are not in a terminal (e.g., piping the output to another command), the output will be in JSON format.
+If you are not in a terminal (e.g., piping the output to another command or using it with waybar), the output will be in JSON format.
 
 To force JSON output, use the `--json` flag:
 
@@ -94,9 +104,29 @@ To force JSON output, use the `--json` flag:
 The JSON output will be a JSON object with `text` (current weather summary) and `tooltip` (hourly forecast) fields:
 
 ```json
-{"text":"🌦️  28.0°","tooltip":"20:00: ☀️ 23.6° [ 25.1°]\r21:00: ☀️ 22.8° [ 24.8°]\r22:00: ☀️ 22.1° [ 24.6°]\r23:00: ☀️ 21.5° [ 21.5°]\r00:00: ☀️ 20.8° [ 20.8°]\r01:00: ☀️ 20.2° [ 20.2°]\r02:00: ☀️ 19.7° [ 19.7°]\r03:00: ☀️ 19.3° [ 19.3°]\r04:00: ☀️ 18.9° [ 18.9°]\r05:00: ☀️ 19.1° [ 19.2°]\r06:00:  22.0° [ 22.0°]\r07:00: ☀️ 24.7° [ 25.3°]\r08:00: ☀️ 27.5° [ 27.0°]\r09:00: ☀️ 29.8° [ 28.9°]\r10:00: ☀️ 31.8° [ 30.7°]\r11:00: ☀️ 33.4° [ 32.2°]\r12:00: ☀️ 34.4° [ 33.2°]\r13:00: ☀️ 35.1° [ 33.8°]\r14:00: ☀️ 35.5° [ 34.1°]\r15:00: ☀️ 35.5° [ 33.9°]\r16:00: ☀️ 35.3° [ 33.8°]\r17:00: ☀️ 34.1° [ 33.3°]\r18:00: ☀️ 30.8° [ 30.2°]\r19:00: ☀️ 27.8° [ 27.4°]"}"
+{"text":"🌦️  28.0°","tooltip":"20:00: ☀️ 23.6° [ 25.1°]\r21:00: ☀️ 22.8° [ 24.8°]\r22:00: ☀️ 22.1° [ 24.6°]\r23:00: ☀️ 21.5° [ 21.5°]\r00:00: ☀️ 20.8° [ 20.8°]\r01:00: ☀️ 20.2° [ 20.2°]\r02:00: ☀️ 19.7° [ 19.7°]\r03:00: ☀️ 19.3° [ 19.3°]\r04:00: ☀️ 18.9° [ 18.9°]\r05:00: ☀️ 19.1° [ 19.2°]\r06:00:  22.0° [ 22.0°]\r07:00: ☀️ 24.7° [ 25.3°]\r08:00: ☀️ 27.5° [ 27.0°]\r09:00: ☀️ 29.8° [ 28.9°]\r10:00: ☀️ 31.8° [ 30.7°]\r11:00: ☀️ 33.4° [ 32.2°]\r12:00: ☀️ 34.4° [ 33.2°]\r13:00: ☀️ 35.1° [ 33.8°]\r14:00: ☀️ 35.5° [ 34.1°]\r15:00: ☀️ 35.5° [ 33.9°]\r16:00: ☀️ 35.3° [ 33.8°]\r17:00: ☀️ 34.1° [ 33.3°]\r18:00: ☀️ 30.8° [ 30.2°]\r19:00: ☀️ 27.8° [ 27.4°]"}
+```
+
+### waybar Integration
+
+For waybar to find the `wayther` executable, ensure it's placed in your system's PATH (e.g., `/usr/local/bin`). We plan to support package managers (RPM, Deb, ebuilds, etc.) in the future for easier installation.
+
+After the initial run in a terminal (to set up the API key and default location), you can integrate Wayther into your waybar configuration. Wayther outputs JSON when not in a terminal, which is ideal for waybar's `custom` module.
+
+Add the following to your waybar `config` file (e.g., `~/.config/waybar/config.jsonc`):
+
+```jsonc
+"custom/wayther": {
+    "exec": "wayther",
+    "return-type": "json",
+    "format": "{} ",
+    "on-click": "wayther",
+    "interval": 3600, // once every day [this is an example]
+    "tooltip": true,
+},
 ```
 ## Testing
+```
 
 To run the tests:
 ```bash
@@ -106,4 +136,3 @@ go test .
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-

@@ -1,0 +1,8 @@
+"custom/wayther": {
+    "exec": "wayther",
+    "return-type": "json",
+    "format": "{} ",
+    "on-click": "wayther",
+    "interval": 3600, // once every day [this is an example]
+    "tooltip": true,
+},
