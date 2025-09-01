@@ -24,12 +24,13 @@ type Config struct {
 	IsOutputJSON   bool			`json:"outputJSON,omitempty"`
 }
 
+// ConfigPath holds paths related to application configuration files.
 type ConfigPath struct {
 	DefConf string
 	Custom  string
 }
 
-// userConfigPath returns the ConfigPath struct with default config prefilled
+// UserConfigPath returns a ConfigPath struct with the default configuration file path pre-filled.
 func UserConfigPath() (ConfigPath, error) {
 	configPath := ConfigPath{}
 
@@ -43,6 +44,9 @@ func UserConfigPath() (ConfigPath, error) {
 	return configPath, nil
 }
 
+// LoadConfig loads the application configuration from the default path or a custom path.
+// It merges configurations if a custom path is provided.
+// It returns a Config struct or an error if loading/creating fails.
 var LoadConfig = func(configPath ConfigPath) (*Config, error) {
 	var err error
 
@@ -96,6 +100,8 @@ var LoadConfig = func(configPath ConfigPath) (*Config, error) {
 	return config, nil
 }
 
+// LoadConfigFromFile loads configuration from a specified file path.
+// It returns a Config struct or an error if the file cannot be read or decoded.
 func LoadConfigFromFile(path string) (*Config, error) {
 	config := &Config{}
 	confFile, err := os.Open(path)
@@ -106,6 +112,8 @@ func LoadConfigFromFile(path string) (*Config, error) {
 	return config, err
 }
 
+// PathExists checks if a given file or directory path exists.
+// It returns true if the path exists, false otherwise.
 func PathExists(path string) bool {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return false
@@ -113,7 +121,9 @@ func PathExists(path string) bool {
 	return true
 }
 
-// createConfig(path)
+// CreateConfig interactively prompts the user for configuration details
+// and creates a new configuration file at the specified path.
+// It returns the created Config struct or an error.
 func CreateConfig(configPath ConfigPath) (*Config, error) {
 
 	reader := bufio.NewReader(os.Stdin)
