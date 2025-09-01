@@ -1,0 +1,21 @@
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+archives:
+  - format: tar.gz
+    # this name template makes the OS and Arch part of the filename
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+snapshot:
+  name_template: "{{ .ProjectName }}_SNAPSHOT_{{ .Version }}"
+release:
+  # github or gitlab
+  github:
+    owner: dkarametos # Replace with your GitHub username/organization
+    name: wayther # Replace with your repository name
