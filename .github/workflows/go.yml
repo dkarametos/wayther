@@ -1,5 +1,7 @@
 
 name: Go CI
+permissions:
+  contents: read
 
 on:
   push:
