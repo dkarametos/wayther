@@ -129,7 +129,6 @@ Add the following to your waybar `config` file (e.g., `~/.config/waybar/config.j
 },
 ```
 ## Testing
-```
 
 To run the tests:
 ```bash
