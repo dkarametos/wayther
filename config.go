@@ -21,7 +21,8 @@ type Config struct {
 	CurrentFields  []any    `json:"current,omitempty"`
 	ForecastFmt    string   `json:"forecastFmt,omitempty"`
 	ForecastFields []any    `json:"forecast,omitempty"`
-	IsOutputJSON   bool			`json:"outputJSON,omitempty"`
+	IsOutputJSON   bool			`json:"outputJSON,omitempty"` // to be deprecated
+  Output         string   `json:"output"` 
 }
 
 // ConfigPath holds paths related to application configuration files.
@@ -89,11 +90,22 @@ var LoadConfig = func(configPath ConfigPath) (*Config, error) {
 		}
 		config.Location = customConfig.Location
 		config.Logger = customConfig.Logger
+
 		if len(customConfig.CurrentFields) > 0 {
 			config.CurrentFields = customConfig.CurrentFields
 		}
+
 		if len(customConfig.ForecastFields) > 0 {
 			config.ForecastFields = customConfig.ForecastFields
+		}
+
+
+		if config.Output == "" {
+			if customConfig.Output != "" {
+				config.Output = customConfig.Output
+			} else {
+				config.Output = "table"
+			}
 		}
 	}
 	

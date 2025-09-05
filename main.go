@@ -36,8 +36,10 @@ Configuration:
 
 func init() {
 	rootCmd.Flags().StringP("config", "c", "", "Provide a custom config")
-	rootCmd.Flags().Bool("json", false, "Convert text to lowercase")  
+	// rootCmd.Flags().Bool("json", false, "output to JSON [compatible with waybar]")  
+	rootCmd.Flags().StringP("output", "o", "table", "Output format (json, table)")
 }
+
 
 func runApp(cmd *cobra.Command, args []string) error {
 
@@ -49,9 +51,12 @@ func runApp(cmd *cobra.Command, args []string) error {
 		return err 
 	}
 
-	config.IsOutputJSON, _ =cmd.Flags().GetBool("json")
+	//config.IsOutputJSON, _ =cmd.Flags().GetBool("json")
+
+	//put a switch here.. 
+	config.Output, _ =cmd.Flags().GetString("output")	
 	if !isTerminal(os.Stdout.Fd()) {
-		config.IsOutputJSON = true
+		config.Output = "json"
 	}
 
 	if len(args) > 0 {
@@ -71,15 +76,15 @@ func runApp(cmd *cobra.Command, args []string) error {
 
 	weather, err := GetWeather(config.Location, config.APIKey)
 	if err != nil {
-		if config.IsOutputJSON {
-			fmt.Printf("{\"text\":\"🤔 ❓\",\"tooltip\":\" error fetching weather: %s \"}", err)
-			os.Exit(0)
+		if config.Output == "json" {
+			fmt.Printf("{\"text\":\" N/A 🌡 \",\"tooltip\":\" error fetching weather: %s \"}", err)
+			return nil
 		}
 		return err 
 	}
 
 	// Format output based on flags or TTY
-	if config.IsOutputJSON {
+	if config.Output == "json" {
 		fmt.Println(formatJSON(weather))
 	} else {
 		fmt.Println(formatTable(weather))

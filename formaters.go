@@ -49,7 +49,7 @@ func formatTable(weather *WeatherAPIResponse) string {
 }
 
 // formatJSON formats the weather data into a JSON string
-func formatJSON(weather *WeatherAPIResponse) (string, error) {
+func formatJSON(weather *WeatherAPIResponse) string {
 	// Construct the 'text' field
 	text := fmt.Sprintf("%s  %.1f°", weather.Current.Condition.Emoji, weather.Current.TempC)
 
@@ -84,8 +84,8 @@ func formatJSON(weather *WeatherAPIResponse) (string, error) {
 	// Marshal to JSON
 	jsonOutput, err := json.Marshal(outputStruct)
 	if err != nil {
-		return "", fmt.Errorf("error marshalling JSON output: %w", err)
+		fmt.Errorf("error marshalling JSON output: %w", err)
 	}
 
-	return string(jsonOutput), nil
+	return string(jsonOutput)
 }
