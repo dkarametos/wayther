@@ -1,7 +1,7 @@
 package main
 
-// emojiMap stores the mapping from weather condition codes to emojis
-var emojiMap = map[int]string{
+// weatherCodeToEmojiMap stores the mapping from weather condition codes to emojis
+var weatherCodeToEmojiMap = map[int]string{
   1000: "󰖙",
   1003: "󰖕",
   1006: "",
@@ -52,9 +52,9 @@ var emojiMap = map[int]string{
   1282: "",
 }
 
-// GetEmoji returns the emoji for a given condition code
-func GetEmoji(code int) string {
-	if emoji, ok := emojiMap[code]; ok {
+// getEmojiForWeatherCode returns the emoji for a given condition code
+func getEmojiForWeatherCode(code int) string {
+	if emoji, ok := weatherCodeToEmojiMap[code]; ok {
 		return emoji
 	}
 	return "❓" // Default emoji for unknown codes

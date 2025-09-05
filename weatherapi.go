@@ -181,15 +181,15 @@ var GetWeatherAPI = func(location, apiKey string) (*WeatherAPIResponse, error) {
 	}
 
 	// Populate emojis
-	weatherResp.Current.Condition.Emoji = GetEmoji(weatherResp.Current.Condition.Code)
+	weatherResp.Current.Condition.Emoji = getEmojiForWeatherCode(weatherResp.Current.Condition.Code)
 
 	for i := range weatherResp.Forecast.Forecastday {
 		// Day condition
-		weatherResp.Forecast.Forecastday[i].Day.Condition.Emoji = GetEmoji(weatherResp.Forecast.Forecastday[i].Day.Condition.Code)
+		weatherResp.Forecast.Forecastday[i].Day.Condition.Emoji = getEmojiForWeatherCode(weatherResp.Forecast.Forecastday[i].Day.Condition.Code)
 
 		// Hourly conditions
 		for j := range weatherResp.Forecast.Forecastday[i].Hour {
-			weatherResp.Forecast.Forecastday[i].Hour[j].Condition.Emoji = GetEmoji(weatherResp.Forecast.Forecastday[i].Hour[j].Condition.Code)
+			weatherResp.Forecast.Forecastday[i].Hour[j].Condition.Emoji = getEmojiForWeatherCode(weatherResp.Forecast.Forecastday[i].Hour[j].Condition.Code)
 		}
 	}
 
