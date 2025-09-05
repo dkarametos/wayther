@@ -74,7 +74,7 @@ func runApp(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	weather, err := GetWeather(config.Location, config.APIKey)
+	weather, err := GetWeatherAPI(config.Location, config.APIKey)
 	if err != nil {
 		if config.Output == "json" {
 			fmt.Printf("{\"text\":\" N/A 🌡 \",\"tooltip\":\" error fetching weather: %s \"}", err)

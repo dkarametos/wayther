@@ -162,7 +162,7 @@ type Hour struct {
 // It takes the location (e.g., "London") and an API key as input.
 // It returns a pointer to a WeatherAPIResponse struct containing the parsed data,
 // or an error if the request fails or the response cannot be decoded.
-var GetWeather = func(location, apiKey string) (*WeatherAPIResponse, error) {
+var GetWeatherAPI = func(location, apiKey string) (*WeatherAPIResponse, error) {
 	url := fmt.Sprintf("%s?key=%s&q=%s&days=2&aqi=no&alerts=no", weatherAPIURL, apiKey, location)
 
 	resp, err := http.Get(url)

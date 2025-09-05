@@ -58,12 +58,12 @@ func TestAppOutput(t *testing.T) {
 	mockResponse := loadMockResponse(t)
 
 	// Keep original functions
-	originalGetWeather := GetWeather
+	originalGetWeather := GetWeatherAPI
 	originalLoadConfig := LoadConfig
 	originalNowFunc := nowFunc
 	originalIsTerminal := isTerminal
 	defer func() {
-		GetWeather = originalGetWeather
+		GetWeatherAPI = originalGetWeather
 		LoadConfig = originalLoadConfig
 		nowFunc = originalNowFunc
 		isTerminal = originalIsTerminal
@@ -73,7 +73,7 @@ func TestAppOutput(t *testing.T) {
 	LoadConfig = func(configPath ConfigPath) (*Config, error) {
 		return &Config{APIKey: "mock-key", Location: "Brussels"}, nil
 	}
-	GetWeather = func(location, apiKey string) (*WeatherAPIResponse, error) {
+	GetWeatherAPI = func(location, apiKey string) (*WeatherAPIResponse, error) {
 		return mockResponse, nil
 	}
 	nowFunc = func() time.Time {
