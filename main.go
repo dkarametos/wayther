@@ -43,7 +43,7 @@ func init() {
 
 func runApp(cmd *cobra.Command, args []string) error {
 
-	configPath, err := UserConfigPath()	
+	configPath, err := NewConfigPath()	
 	configPath.Custom, _ = cmd.Flags().GetString("config")	
 
 	config, err := LoadConfig(configPath)

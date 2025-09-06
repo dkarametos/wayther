@@ -8,8 +8,8 @@ import (
 	"testing"
 )
 
-func TestUserConfigPath(t *testing.T) {
-	configPath, err := UserConfigPath()
+func TestNewConfigPath(t *testing.T) {
+	configPath, err := NewConfigPath()
 	if err != nil {
 		t.Fatalf("UserConfigPath() returned an error: %v", err)
 	}
@@ -108,23 +108,7 @@ func TestLoadConfig_CustomConfigOverridesDefault(t *testing.T) {
 	}
 }
 
-func TestLoadConfig_NoDefaultConfigAndCustomConfig(t *testing.T) {
-	tempDir := t.TempDir()
-	configPath := ConfigPath{
-		DefConf: filepath.Join(tempDir, "nonexistent/config.json"),
-		Custom:  filepath.Join(tempDir, "custom/config.json"),
-	}
 
-	_, err := LoadConfig(configPath)
-	if err == nil {
-		t.Fatal("Expected an error, but got nil")
-	}
-
-	expectedError := "exit with message like: first create the default config"
-	if err.Error() != expectedError {
-		t.Errorf("Expected error message '%s', got '%s'", expectedError, err.Error())
-	}
-}
 
 // Helper function to simulate user input
 func simulateUserInput(t *testing.T, input string) *os.File {

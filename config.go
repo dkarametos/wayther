@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +10,33 @@ import (
 
 	"golang.org/x/term"
 )
+
+// ConfigPath holds paths related to application configuration files.
+type ConfigPath struct {
+	DefConf string
+	Custom  string
+}
+
+// UserConfigPath returns a ConfigPath struct with the default configuration file path pre-filled.
+func NewConfigPath() (ConfigPath, error) {
+	configPath := ConfigPath{}
+
+	uConfigDir, err := os.UserConfigDir()
+	if err != nil {
+		return configPath, err
+	}
+	configPath.DefConf = filepath.Join(uConfigDir, "wayther", "config.json")
+	configPath.Custom = ""
+
+	return configPath, nil
+}
+
+// isCustom checks if a custom configuration file path is provided.
+// It returns true if a custom path is set, false otherwise.
+func (cp *ConfigPath) isCustom() bool {
+	return (cp.Custom != "")
+}
+
 
 // Config holds the application configuration
 type Config struct {
@@ -25,65 +51,24 @@ type Config struct {
   Output         string   `json:"output"` 
 }
 
-// ConfigPath holds paths related to application configuration files.
-type ConfigPath struct {
-	DefConf string
-	Custom  string
-}
-
-// UserConfigPath returns a ConfigPath struct with the default configuration file path pre-filled.
-func UserConfigPath() (ConfigPath, error) {
-	configPath := ConfigPath{}
-
-	uConfigDir, err := os.UserConfigDir()
-	if err != nil {
-		return configPath, err
-	}
-	configPath.DefConf = filepath.Join(uConfigDir, "wayther", "config.json")
-	configPath.Custom = ""
-
-	return configPath, nil
-}
-
 // LoadConfig loads the application configuration from the default path or a custom path.
 // It merges configurations if a custom path is provided.
 // It returns a Config struct or an error if loading/creating fails.
 var LoadConfig = func(configPath ConfigPath) (*Config, error) {
-	var err error
 
 	//Load or Create the defaultConfig
-	config := &Config{}
-	if PathExists(configPath.DefConf) {
-		config, err = LoadConfigFromFile(configPath.DefConf)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		if configPath.Custom == "" {
-			config, err = CreateConfig(configPath)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			return nil, errors.New("exit with message like: first create the default config")
-		}
+	config, err := LoadOrCreateConfig(configPath.DefConf, true)
+	if err != nil {
+		return nil, err
 	}
 
 	// If there is a custom config specified
-	if configPath.Custom != "" {
-		customConfig := &Config{}
-		if PathExists(configPath.Custom) {
-			customConfig, err = LoadConfigFromFile(configPath.Custom)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			customConfig, err = CreateConfig(configPath)
-			if err != nil {
-				return nil, err
-			}
+	if configPath.isCustom() {
+		customConfig, err := LoadOrCreateConfig(configPath.Custom, false)
+		if err != nil {
+			return nil, err
 		}
-
+	
 		//merge the configs
 		if customConfig.APIKey != "" {
 			config.APIKey = customConfig.APIKey
@@ -111,6 +96,37 @@ var LoadConfig = func(configPath ConfigPath) (*Config, error) {
 	
 	return config, nil
 }
+
+
+// LoadOrCreateConfig loads a configuration from a given path if it exists,
+// otherwise it creates a new one.
+// path: The path to the configuration file.
+// isDefault: A boolean to indicate if this is the default configuration.
+// It returns a Config struct or an error if loading/creating fails.
+func LoadOrCreateConfig(path string, isDefault bool) (*Config, error) {
+
+	var err error
+
+	config := &Config{}
+
+	if PathExists(path) {
+		config, err = LoadConfigFromFile(path)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		if isDefault {
+			fmt.Println("Default config not found.\n We will create a default config first:")
+		}
+		config, err = CreateConfig(path, isDefault)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return config, nil
+}
+
 
 // LoadConfigFromFile loads configuration from a specified file path.
 // It returns a Config struct or an error if the file cannot be read or decoded.
@@ -217,22 +233,14 @@ func WriteConfig(config *Config, path string) error {
 // CreateConfig interactively prompts the user for configuration details
 // and creates a new configuration file at the specified path.
 // It returns the created Config struct or an error.
-func CreateConfig(configPath ConfigPath) (*Config, error) {
+func CreateConfig(path string, isDefault bool) (*Config, error) {
 
 	var err error
 
 	config := &Config{}
-	path := ""
-
-	if configPath.Custom == "" {
-		path = configPath.DefConf
-	} else {
-		path = configPath.Custom
-	}
-
 
 	//start the dialog
-	if configPath.Custom == "" {
+	if isDefault {
 		config.APIKey, err = GetUserInput("weatheapi key", "", true, false)
 		if err != nil {
 			return config, err
