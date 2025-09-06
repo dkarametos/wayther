@@ -133,12 +133,94 @@ func PathExists(path string) bool {
 	return true
 }
 
+
+// GetUserInput prompts the user for input with a given prompt.
+// It can handle secret input (like passwords) and default values.
+// prompt: The message to display to the user.
+// defaultValue: The value to return if the user enters an empty string.
+// secret: If true, the input will be read from a password terminal.
+// canBeEmpty: If true, the user can provide an empty value.
+// It returns the user's input as a string, or an error if one occurred.
+func GetUserInput(prompt string, defaultValue string, secret bool, canBeEmpty bool) (string, error) {
+
+	var userInput string
+	var input     string
+	var err       error
+
+	for {
+		fmt.Printf("Enter %s:", prompt)
+
+		if secret {
+			byteString, err := term.ReadPassword(int(os.Stdin.Fd()))
+			if err != nil {
+				return string(byteString), err
+			}
+			userInput = string(byteString)
+		} else {
+			reader := bufio.NewReader(os.Stdin)
+			userInput, err = reader.ReadString('\n')
+			if err != nil {
+				return userInput, err
+			}
+		}
+	  
+		input = strings.TrimSpace(userInput)
+		fmt.Println()
+
+		if input == "" && canBeEmpty == true {
+			input = defaultValue
+		}
+
+		if input != "" || canBeEmpty == true {
+			break
+		}
+
+	fmt.Printf("%s is required\n", prompt )
+	}
+
+	return input, nil
+}
+
+// WriteConfig writes the given Config struct to a file at the specified path.
+// It creates the directory if it doesn't exist.
+// config: The Config struct to write to the file.
+// path: The path to the file to write to.
+// It returns an error if one occurred.
+func WriteConfig(config *Config, path string) error {
+	
+	//split out the folder and mkdir -p
+	configDir, _ := filepath.Split(path)
+		if configDir != "" {
+		err := os.MkdirAll(configDir, 0750)
+		if err != nil {
+			return err
+		}
+	}
+
+	//write the file to disk
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(config); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+
 // CreateConfig interactively prompts the user for configuration details
 // and creates a new configuration file at the specified path.
 // It returns the created Config struct or an error.
 func CreateConfig(configPath ConfigPath) (*Config, error) {
 
-	reader := bufio.NewReader(os.Stdin)
+	var err error
+
 	config := &Config{}
 	path := ""
 
@@ -148,59 +230,30 @@ func CreateConfig(configPath ConfigPath) (*Config, error) {
 		path = configPath.Custom
 	}
 
-	//split out the folder and mkdir -p
-	configDir, _ := filepath.Split(path)
-	err := os.MkdirAll(configDir, 0750)
-	if err != nil {
-		return config, err
-	}
 
 	//start the dialog
-
 	if configPath.Custom == "" {
-		for {
-			fmt.Print("Enter WeatherAPI Key: ")
-			byteAPIKey, err := term.ReadPassword(int(os.Stdin.Fd()))
-			if err != nil {
-				return config, err
-			}
-			config.APIKey = strings.TrimSpace(string(byteAPIKey))
-			fmt.Println()
-			if config.APIKey != "" {
-				break
-			}
-			fmt.Println("API Key cannot be empty for default configuration.")
-		}
-	}
-
-	for {
-		fmt.Print("Enter location: ")
-		location, err := reader.ReadString('\n')
+		config.APIKey, err = GetUserInput("weatheapi key", "", true, false)
 		if err != nil {
 			return config, err
 		}
-		config.Location = strings.TrimSpace(location)
-		if config.Location != "" {
-			break
-		}
-		fmt.Println("Location cannot be empty.")
+	}
+
+	config.Location, err = GetUserInput("Location", "auto:ip", false, true)
+	if err != nil {
+		return config, err
 	}
 
 	config.Logger = false
 
-	file, err := os.Create(path)
+
+	//Write to file
+  err  = WriteConfig(config, path)
 	if err != nil {
 		return config, err
 	}
-	defer file.Close()
 
-	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(config); err != nil {
-		return config, err
-	}
-
-	fmt.Printf("Created configuration file: %s\n", path)
+	fmt.Printf("Created configuration file: %s\n\n", path)
 	return config, nil
 }
 
