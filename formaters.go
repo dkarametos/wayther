@@ -10,7 +10,7 @@ import (
 )
 
 // formatTable formats the weather data into a human-readable table
-func formatTable(weather *WeatherAPIResponse) string {
+func formatTable(weather *WeatherAPIResponse, nowFunc func() time.Time) string {
 	t := table.NewWriter()
 	t.SetStyle(table.StyleLight)
 
@@ -49,7 +49,7 @@ func formatTable(weather *WeatherAPIResponse) string {
 }
 
 // formatJSON formats the weather data into a JSON string
-func formatJSON(weather *WeatherAPIResponse) string {
+func formatJSON(weather *WeatherAPIResponse, nowFunc func() time.Time) string {
 	// Construct the 'text' field
 	text := fmt.Sprintf("%s  %.1f°", weather.Current.Condition.Emoji, weather.Current.TempC)
 

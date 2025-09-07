@@ -54,27 +54,18 @@ func TestAppOutput(t *testing.T) {
 	weatherProvider := &MockWeatherProvider{mockResponse: mockResponse}
 	configProvider := &MockConfigProvider{mockConfig: &Config{APIKey: "mock-key", Location: "Brussels"}}
 
-	originalNowFunc := nowFunc
-	originalIsTerminal := isTerminal
-	defer func() {
-		nowFunc = originalNowFunc
-		isTerminal = originalIsTerminal
-	}()
-
-	nowFunc = func() time.Time {
+	mockNowFunc := func() time.Time {
 		return time.Unix(mockResponse.Location.LocaltimeEpoch, 0)
 	}
 
 	t.Run("JSON Output", func(t *testing.T) {
-		isTerminal = func(fd uintptr) bool { return false } // Force JSON
-
 		// Redirect stdout
 		oldStdout := os.Stdout
 		r, w, _ := os.Pipe()
 		os.Stdout = w
 
 		cmd := &cobra.Command{}
-		err := runApp(cmd, []string{"Brussels"}, weatherProvider, configProvider)
+		err := runApp(cmd, []string{"Brussels"}, weatherProvider, configProvider, func(fd uintptr) bool { return false }, mockNowFunc)
 		assert.NoError(t, err)
 
 		// Restore stdout and read the captured output
@@ -92,15 +83,13 @@ func TestAppOutput(t *testing.T) {
 	})
 
 	t.Run("Table Output", func(t *testing.T) {
-		isTerminal = func(fd uintptr) bool { return true } // Force Table
-
 		// Redirect stdout
 		oldStdout := os.Stdout
 		r, w, _ := os.Pipe()
 		os.Stdout = w
 
 		cmd := &cobra.Command{}
-		err := runApp(cmd, []string{"Brussels"}, weatherProvider, configProvider)
+		err := runApp(cmd, []string{"Brussels"}, weatherProvider, configProvider, func(fd uintptr) bool { return true }, mockNowFunc)
 		assert.NoError(t, err)
 
 		// Restore stdout and read the captured output
@@ -124,8 +113,7 @@ func TestExecutionError(t *testing.T) {
 	configProvider := &MockConfigProvider{err: errors.New("mock config load error")}
 
 	cmd := &cobra.Command{}
-	err := runApp(cmd, []string{"some-location"}, weatherProvider, configProvider)
-
+	err := runApp(cmd, []string{"some-location"}, weatherProvider, configProvider, func(fd uintptr) bool { return true }, time.Now)
 	assert.Error(t, err, "Expected an error to be returned from runApp()")
 	assert.EqualError(t, err, "mock config load error", "The error message should be the one from the mock")
 }

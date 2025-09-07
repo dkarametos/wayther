@@ -112,7 +112,7 @@ func (c *Config) MergeConfigs(customConfig *Config) {
 }
 
 // ParseCommand parses the command-line arguments and flags and updates the Config struct.
-func (c *Config) ParseCommand (cmd *cobra.Command, args []string) {
+func (c *Config) ParseCommand(cmd *cobra.Command, args []string, isTerminal func(uintptr) bool) {
 
 	//put a switch here.. 
 	c.Output, _ =cmd.Flags().GetString("output")	

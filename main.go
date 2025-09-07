@@ -9,19 +9,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// isTerminal can be overridden in tests for deterministic behavior.
-var isTerminal = isatty.IsTerminal
-
-// nowFunc is a variable that holds the function to get the current time.
-// It can be overridden in tests for deterministic behavior.
-var nowFunc = time.Now
-
 var rootCmd = &cobra.Command{
 	Use:   "wayther [Location]",
 	Short: "A simple weather API client",
 	Long: `wayther is a CLI tool for retrieving current weather and forecasts.
 
-You can provide location as argument.
+You You can provide location as argument.
 Multiple options can be applied simultaneously.
 
 Configuration:
@@ -31,7 +24,7 @@ Configuration:
 	RunE: func(cmd *cobra.Command, args []string) error {
 		weatherProvider := &APIWeatherProvider{}
 		configProvider  := &FileConfigProvider{}
-		return runApp(cmd, args, weatherProvider, configProvider)
+		return runApp(cmd, args, weatherProvider, configProvider, isatty.IsTerminal, time.Now)
 	},
 }
 
@@ -40,7 +33,7 @@ func init() {
 	rootCmd.Flags().StringP("output", "o", "table", "Output format (json, table)")
 }
 
-func runApp(cmd *cobra.Command, args []string, weatherProvider WeatherProvider, configProvider ConfigProvider) error {
+func runApp(cmd *cobra.Command, args []string, weatherProvider WeatherProvider, configProvider ConfigProvider, isTerminal func(uintptr) bool, nowFunc func() time.Time) error {
 
 	configPath, err := NewConfigPath()
 	configPath.Custom, _ = cmd.Flags().GetString("config")
@@ -49,7 +42,7 @@ func runApp(cmd *cobra.Command, args []string, weatherProvider WeatherProvider, 
 	if err != nil {
 		return err
 	}
-	config.ParseCommand(cmd, args)
+	config.ParseCommand(cmd, args, isTerminal)
 
 	weather, err := weatherProvider.GetWeatherAPI(config.Location, config.APIKey)
 	if err != nil {
@@ -62,9 +55,9 @@ func runApp(cmd *cobra.Command, args []string, weatherProvider WeatherProvider, 
 
 	// Format output based on flags or TTY
 	if config.Output == "json" {
-		fmt.Println(formatJSON(weather))
+		fmt.Println(formatJSON(weather, nowFunc))
 	} else {
-		fmt.Println(formatTable(weather))
+		fmt.Println(formatTable(weather, nowFunc))
 	}
 
 	return nil

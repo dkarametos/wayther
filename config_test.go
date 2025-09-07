@@ -210,14 +210,14 @@ func TestParseCommand(t *testing.T) {
 
 	// Test with args
 	args := []string{"London"}
-	config.ParseCommand(cmd, args)
+	config.ParseCommand(cmd, args, func(uintptr) bool { return true })
 	if config.Location != "London" {
 		t.Errorf("Expected Location to be 'London', got '%s'", config.Location)
 	}
 
 	// Test with output flag
 	cmd.Flags().Set("output", "json")
-	config.ParseCommand(cmd, args)
+	config.ParseCommand(cmd, args, func(uintptr) bool { return false })
 	if config.Output != "json" {
 		t.Errorf("Expected Output to be 'json', got '%s'", config.Output)
 	}
