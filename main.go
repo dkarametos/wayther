@@ -36,7 +36,6 @@ Configuration:
 
 func init() {
 	rootCmd.Flags().StringP("config", "c", "", "Provide a custom config")
-	// rootCmd.Flags().Bool("json", false, "output to JSON [compatible with waybar]")  
 	rootCmd.Flags().StringP("output", "o", "table", "Output format (json, table)")
 }
 
@@ -50,8 +49,6 @@ func runApp(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err 
 	}
-
-	//config.IsOutputJSON, _ =cmd.Flags().GetBool("json")
 
 	//put a switch here.. 
 	config.Output, _ =cmd.Flags().GetString("output")	

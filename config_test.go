@@ -50,7 +50,7 @@ func createTempConfigFile(t *testing.T, dir, filename string, config *Config) st
 
 func TestLoadConfig_DefaultConfigExists(t *testing.T) {
 	tempDir := t.TempDir()
-	defaultConfig := &Config{APIKey: "default_key", Location: "DefaultCity", Logger: false}
+	defaultConfig := &Config{APIKey: "default_key", Location: "DefaultCity", Logger: false, CurrentFields: []any{}, ForecastFields: []any{}}
 	defaultConfigPath := createTempConfigFile(t, tempDir, "wayther/config.json", defaultConfig)
 
 	configPath := ConfigPath{
@@ -81,7 +81,7 @@ func TestLoadConfig_DefaultConfigExists(t *testing.T) {
 
 func TestLoadConfig_CustomConfigOverridesDefault(t *testing.T) {
 	tempDir := t.TempDir()
-	defaultConfig := &Config{APIKey: "default_key", Location: "DefaultCity", Logger: false}
+	defaultConfig := &Config{APIKey: "default_key", Location: "DefaultCity", Logger: false, CurrentFields: []any{}, ForecastFields: []any{}}
 	customConfig := &Config{APIKey: "custom_key", Location: "CustomCity", Logger: true}
 
 	defaultConfigPath := createTempConfigFile(t, tempDir, "wayther/config.json", defaultConfig)
@@ -132,7 +132,7 @@ func simulateUserInput(t *testing.T, input string) *os.File {
 
 func TestLoadConfig_CreateCustomConfig(t *testing.T) {
 	tempDir := t.TempDir()
-	defaultConfig := &Config{APIKey: "default_key", Location: "DefaultCity", Logger: false}
+	defaultConfig := &Config{APIKey: "default_key", Location: "DefaultCity", Logger: false, CurrentFields: []any{}, ForecastFields: []any{}}
 	defaultConfigPath := createTempConfigFile(t, tempDir, "wayther/config.json", defaultConfig)
 	customConfigPath := filepath.Join(tempDir, "custom/config.json")
 
@@ -158,5 +158,45 @@ func TestLoadConfig_CreateCustomConfig(t *testing.T) {
 
 	if loadedConfig.Location != "CustomLocation" {
 		t.Errorf("Expected Location CustomLocation, got %s", loadedConfig.Location)
+	}
+}
+
+func TestSetDefaults(t *testing.T) {
+	config := &Config{}
+	config.SetDefaults()
+
+	if config.Output != "table" {
+		t.Errorf("Expected Output to be 'table', got '%s'", config.Output)
+	}
+}
+
+func TestMergeConfigs(t *testing.T) {
+	baseConfig := &Config{
+		APIKey:   "base_key",
+		Location: "BaseCity",
+		Logger:   false,
+		Output:   "table",
+	}
+
+	customConfig := &Config{
+		APIKey:   "custom_key",
+		Location: "CustomCity",
+		Logger:   true,
+		Output:   "json",
+	}
+
+	baseConfig.MergeConfigs(customConfig)
+
+	if baseConfig.APIKey != "custom_key" {
+		t.Errorf("Expected APIKey to be 'custom_key', got '%s'", baseConfig.APIKey)
+	}
+	if baseConfig.Location != "CustomCity" {
+		t.Errorf("Expected Location to be 'CustomCity', got '%s'", baseConfig.Location)
+	}
+	if baseConfig.Logger != true {
+		t.Errorf("Expected Logger to be true, got %v", baseConfig.Logger)
+	}
+	if baseConfig.Output != "json" {
+		t.Errorf("Expected Output to be 'json', got '%s'", baseConfig.Output)
 	}
 }
