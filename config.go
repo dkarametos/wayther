@@ -4,11 +4,14 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"log"
+	"log/syslog"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"golang.org/x/term"
+	"github.com/spf13/cobra"
 )
 
 // ConfigPath holds paths related to application configuration files.
@@ -105,6 +108,31 @@ func (c *Config) MergeConfigs(customConfig *Config) {
 
 	if customConfig.Output != "" {
 		c.Output = customConfig.Output
+	}
+}
+
+// ParseCommand parses the command-line arguments and flags and updates the Config struct.
+func (c *Config) ParseCommand (cmd *cobra.Command, args []string) {
+
+	//put a switch here.. 
+	c.Output, _ =cmd.Flags().GetString("output")	
+	if !isTerminal(os.Stdout.Fd()) {
+		c.Output = "json"
+	}
+
+	if len(args) > 0 {
+		c.Location = strings.Join(args, " ")
+	}
+
+	// Configure syslog if enabled
+	if c.Logger {
+		syslogWriter, err := syslog.New(syslog.LOG_NOTICE|syslog.LOG_DAEMON, "wayther")
+		if err != nil {
+			log.Printf("Failed to connect to syslog: %v", err)
+		} else {
+			log.SetOutput(syslogWriter)
+			log.SetFlags(0) // Syslog adds its own timestamp and hostname
+		}
 	}
 }
 

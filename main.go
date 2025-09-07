@@ -2,10 +2,7 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"log/syslog"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/mattn/go-isatty"
@@ -39,7 +36,6 @@ func init() {
 	rootCmd.Flags().StringP("output", "o", "table", "Output format (json, table)")
 }
 
-
 func runApp(cmd *cobra.Command, args []string) error {
 
 	configPath, err := NewConfigPath()	
@@ -49,33 +45,13 @@ func runApp(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err 
 	}
-
-	//put a switch here.. 
-	config.Output, _ =cmd.Flags().GetString("output")	
-	if !isTerminal(os.Stdout.Fd()) {
-		config.Output = "json"
-	}
-
-	if len(args) > 0 {
-		config.Location = strings.Join(args, " ")
-	}
-
-	// Configure syslog if enabled
-	if config.Logger {
-		syslogWriter, err := syslog.New(syslog.LOG_NOTICE|syslog.LOG_DAEMON, "wayther")
-		if err != nil {
-			log.Printf("Failed to connect to syslog: %v", err)
-		} else {
-			log.SetOutput(syslogWriter)
-			log.SetFlags(0) // Syslog adds its own timestamp and hostname
-		}
-	}
+	config.ParseCommand(cmd, args)
 
 	weather, err := GetWeatherAPI(config.Location, config.APIKey)
 	if err != nil {
 		if config.Output == "json" {
 			fmt.Printf("{\"text\":\" N/A 🌡 \",\"tooltip\":\" error fetching weather: %s \"}", err)
-			return nil
+			os.Exit(0)
 		}
 		return err 
 	}
@@ -90,7 +66,9 @@ func runApp(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-
 func main() {
-	rootCmd.Execute()
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }

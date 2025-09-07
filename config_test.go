@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
 func TestNewConfigPath(t *testing.T) {
@@ -198,5 +200,25 @@ func TestMergeConfigs(t *testing.T) {
 	}
 	if baseConfig.Output != "json" {
 		t.Errorf("Expected Output to be 'json', got '%s'", baseConfig.Output)
+	}
+}
+
+func TestParseCommand(t *testing.T) {
+	config := &Config{}
+	cmd := &cobra.Command{}
+	cmd.Flags().StringP("output", "o", "table", "Output format (json, table)")
+
+	// Test with args
+	args := []string{"London"}
+	config.ParseCommand(cmd, args)
+	if config.Location != "London" {
+		t.Errorf("Expected Location to be 'London', got '%s'", config.Location)
+	}
+
+	// Test with output flag
+	cmd.Flags().Set("output", "json")
+	config.ParseCommand(cmd, args)
+	if config.Output != "json" {
+		t.Errorf("Expected Output to be 'json', got '%s'", config.Output)
 	}
 }
