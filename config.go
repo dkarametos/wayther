@@ -139,7 +139,7 @@ func (c *Config) ParseCommand (cmd *cobra.Command, args []string) {
 // LoadConfig loads the application configuration from the default path or a custom path.
 // It merges configurations if a custom path is provided.
 // It returns a Config struct or an error if loading/creating fails.
-var LoadConfig = func(configPath ConfigPath) (*Config, error) {
+func LoadConfig(configPath ConfigPath) (*Config, error) {
 
 	//Load or Create the defaultConfig
 	config, err := LoadOrCreateConfig(configPath.DefConf, true)

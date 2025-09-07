@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -30,7 +29,7 @@ func loadMockResponse(t *testing.T) *WeatherAPIResponse {
 }
 
 // executeCommand captures the stdout and stderr of a cobra command.
-func executeCommand(args ...string) (string, error) {
+func executeCommand(configPath string, args ...string) (string, error) {
 	// Redirect stdout and stderr
 	oldStdout := os.Stdout
 	r, w, _ := os.Pipe()
@@ -38,7 +37,11 @@ func executeCommand(args ...string) (string, error) {
 	os.Stderr = w // Redirect stderr to the same pipe
 
 	// Execute the command
-	rootCmd.SetArgs(args)
+	if configPath != "" {
+		rootCmd.SetArgs(append(args, "--config", configPath))
+	} else {
+		rootCmd.SetArgs(args)
+	}
 	// Reset flags to default state before each execution
 	rootCmd.Flags().Set("json", "false")
 	err := rootCmd.Execute()
@@ -56,23 +59,21 @@ func executeCommand(args ...string) (string, error) {
 func TestAppOutput(t *testing.T) {
 	// --- Setup Mocks ---
 	mockResponse := loadMockResponse(t)
+	tempDir := t.TempDir()
+	config := &Config{APIKey: "mock-key", Location: "Brussels"}
+	configPath := createTempConfigFile(t, tempDir, "config.json", config)
 
 	// Keep original functions
 	originalGetWeather := GetWeatherAPI
-	originalLoadConfig := LoadConfig
 	originalNowFunc := nowFunc
 	originalIsTerminal := isTerminal
 	defer func() {
 		GetWeatherAPI = originalGetWeather
-		LoadConfig = originalLoadConfig
 		nowFunc = originalNowFunc
 		isTerminal = originalIsTerminal
 	}()
 
 	// Override with mock implementations
-	LoadConfig = func(configPath ConfigPath) (*Config, error) {
-		return &Config{APIKey: "mock-key", Location: "Brussels"}, nil
-	}
 	GetWeatherAPI = func(location, apiKey string) (*WeatherAPIResponse, error) {
 		return mockResponse, nil
 	}
@@ -83,7 +84,7 @@ func TestAppOutput(t *testing.T) {
 	t.Run("JSON Output", func(t *testing.T) {
 		isTerminal = func(fd uintptr) bool { return false } // Force JSON
 
-		actualOutput, err := executeCommand("Brussels")
+		actualOutput, err := executeCommand(configPath, "Brussels")
 		assert.NoError(t, err)
 
 		// The app produces valid JSON, so we check for key substrings.
@@ -96,7 +97,7 @@ func TestAppOutput(t *testing.T) {
 	t.Run("Table Output", func(t *testing.T) {
 		isTerminal = func(fd uintptr) bool { return true } // Force Table
 
-		actualOutput, err := executeCommand("Brussels")
+		actualOutput, err := executeCommand(configPath, "Brussels")
 		assert.NoError(t, err)
 
 		// Assert that key elements for the Brussels response are present
@@ -109,20 +110,18 @@ func TestAppOutput(t *testing.T) {
 }
 
 func TestExecutionError(t *testing.T) {
-	// Keep original function
-	originalLoadConfig := LoadConfig
-	defer func() {
-		LoadConfig = originalLoadConfig
-	}()
-
-	// Mock LoadConfig to return a predictable error
-	LoadConfig = func(configPath ConfigPath) (*Config, error) {
-		return nil, errors.New("mock config load error")
+	tempDir := t.TempDir()
+	configPath := filepath.Join(tempDir, "config.json")
+	// create a malformed json file
+	err := os.WriteFile(configPath, []byte("{"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
 	}
 
 	// Since Cobra prints the error to stderr and returns it, we check both.
-	output, err := executeCommand("some-location")
+	output, err := executeCommand(configPath, "some-location")
 
 	assert.Error(t, err, "Expected an error to be returned from Execute()")
-	assert.Contains(t, output, "mock config load error", "The error message should be printed to the console")
+	assert.Contains(t, output, "unexpected EOF", "The error message should be printed to the console")
 }
+
