@@ -28,7 +28,11 @@ Configuration:
   The application uses a configuration file to store your WeatherAPI key and default location.
   If no configuration file is found, you will be prompted to create one interactively.
   The 'logger' key in the config (boolean, defaults to false) enables syslog output if true.`,
-	RunE: runApp,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		weatherProvider := &APIWeatherProvider{}
+		configProvider  := &FileConfigProvider{}
+		return runApp(cmd, args, weatherProvider, configProvider)
+	},
 }
 
 func init() {
@@ -36,24 +40,24 @@ func init() {
 	rootCmd.Flags().StringP("output", "o", "table", "Output format (json, table)")
 }
 
-func runApp(cmd *cobra.Command, args []string) error {
+func runApp(cmd *cobra.Command, args []string, weatherProvider WeatherProvider, configProvider ConfigProvider) error {
 
-	configPath, err := NewConfigPath()	
-	configPath.Custom, _ = cmd.Flags().GetString("config")	
+	configPath, err := NewConfigPath()
+	configPath.Custom, _ = cmd.Flags().GetString("config")
 
-	config, err := LoadConfig(configPath)
+	config, err := configProvider.LoadConfig(configPath)
 	if err != nil {
-		return err 
+		return err
 	}
 	config.ParseCommand(cmd, args)
 
-	weather, err := GetWeatherAPI(config.Location, config.APIKey)
+	weather, err := weatherProvider.GetWeatherAPI(config.Location, config.APIKey)
 	if err != nil {
 		if config.Output == "json" {
-			fmt.Printf("{\"text\":\" N/A 🌡 \",\"tooltip\":\" error fetching weather: %s \"}", err)
+			fmt.Printf("{\"text\":\" N/A ☢ \",\"tooltip\":\" error fetching weather: %s \"}", err)
 			os.Exit(0)
 		}
-		return err 
+		return err
 	}
 
 	// Format output based on flags or TTY

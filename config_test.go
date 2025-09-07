@@ -59,7 +59,7 @@ func TestLoadConfig_DefaultConfigExists(t *testing.T) {
 		DefConf: defaultConfigPath,
 	}
 
-	loadedConfig, err := LoadConfig(configPath)
+	loadedConfig, err := (&FileConfigProvider{}).LoadConfig(configPath)
 	if err != nil {
 		t.Fatalf("LoadConfig failed: %v", err)
 	}
@@ -94,7 +94,7 @@ func TestLoadConfig_CustomConfigOverridesDefault(t *testing.T) {
 		Custom:  customConfigPath,
 	}
 
-	loadedConfig, err := LoadConfig(configPath)
+	loadedConfig, err := (&FileConfigProvider{}).LoadConfig(configPath)
 	if err != nil {
 		t.Fatalf("LoadConfig failed: %v", err)
 	}
@@ -153,7 +153,7 @@ func TestLoadConfig_CreateCustomConfig(t *testing.T) {
 		tempStdin.Close()
 	}()
 
-	loadedConfig, err := LoadConfig(configPath)
+	loadedConfig, err := (&FileConfigProvider{}).LoadConfig(configPath)
 	if err != nil {
 		t.Fatalf("LoadConfig failed: %v", err)
 	}

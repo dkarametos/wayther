@@ -3,12 +3,14 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,55 +30,37 @@ func loadMockResponse(t *testing.T) *WeatherAPIResponse {
 	return &response
 }
 
-// executeCommand captures the stdout and stderr of a cobra command.
-func executeCommand(configPath string, args ...string) (string, error) {
-	// Redirect stdout and stderr
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-	os.Stderr = w // Redirect stderr to the same pipe
+type MockWeatherProvider struct {
+	mockResponse *WeatherAPIResponse
+	err          error
+}
 
-	// Execute the command
-	if configPath != "" {
-		rootCmd.SetArgs(append(args, "--config", configPath))
-	} else {
-		rootCmd.SetArgs(args)
-	}
-	// Reset flags to default state before each execution
-	rootCmd.Flags().Set("json", "false")
-	err := rootCmd.Execute()
+func (m *MockWeatherProvider) GetWeatherAPI(location, apiKey string) (*WeatherAPIResponse, error) {
+	return m.mockResponse, m.err
+}
 
-	// Restore stdout and stderr and read the captured output
-	w.Close()
-	os.Stdout = oldStdout
-	os.Stderr = oldStdout
-	var buf bytes.Buffer
-	io.Copy(&buf, r)
+type MockConfigProvider struct {
+	mockConfig *Config
+	err        error
+}
 
-	return buf.String(), err
+func (m *MockConfigProvider) LoadConfig(configPath ConfigPath) (*Config, error) {
+	return m.mockConfig, m.err
 }
 
 func TestAppOutput(t *testing.T) {
 	// --- Setup Mocks ---
 	mockResponse := loadMockResponse(t)
-	tempDir := t.TempDir()
-	config := &Config{APIKey: "mock-key", Location: "Brussels"}
-	configPath := createTempConfigFile(t, tempDir, "config.json", config)
+	weatherProvider := &MockWeatherProvider{mockResponse: mockResponse}
+	configProvider := &MockConfigProvider{mockConfig: &Config{APIKey: "mock-key", Location: "Brussels"}}
 
-	// Keep original functions
-	originalGetWeather := GetWeatherAPI
 	originalNowFunc := nowFunc
 	originalIsTerminal := isTerminal
 	defer func() {
-		GetWeatherAPI = originalGetWeather
 		nowFunc = originalNowFunc
 		isTerminal = originalIsTerminal
 	}()
 
-	// Override with mock implementations
-	GetWeatherAPI = func(location, apiKey string) (*WeatherAPIResponse, error) {
-		return mockResponse, nil
-	}
 	nowFunc = func() time.Time {
 		return time.Unix(mockResponse.Location.LocaltimeEpoch, 0)
 	}
@@ -84,8 +68,21 @@ func TestAppOutput(t *testing.T) {
 	t.Run("JSON Output", func(t *testing.T) {
 		isTerminal = func(fd uintptr) bool { return false } // Force JSON
 
-		actualOutput, err := executeCommand(configPath, "Brussels")
+		// Redirect stdout
+		oldStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		cmd := &cobra.Command{}
+		err := runApp(cmd, []string{"Brussels"}, weatherProvider, configProvider)
 		assert.NoError(t, err)
+
+		// Restore stdout and read the captured output
+		w.Close()
+		os.Stdout = oldStdout
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		actualOutput := buf.String()
 
 		// The app produces valid JSON, so we check for key substrings.
 		assert.Contains(t, actualOutput, "\"text\":", "Output should contain the JSON key 'text'")
@@ -97,8 +94,21 @@ func TestAppOutput(t *testing.T) {
 	t.Run("Table Output", func(t *testing.T) {
 		isTerminal = func(fd uintptr) bool { return true } // Force Table
 
-		actualOutput, err := executeCommand(configPath, "Brussels")
+		// Redirect stdout
+		oldStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		cmd := &cobra.Command{}
+		err := runApp(cmd, []string{"Brussels"}, weatherProvider, configProvider)
 		assert.NoError(t, err)
+
+		// Restore stdout and read the captured output
+		w.Close()
+		os.Stdout = oldStdout
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		actualOutput := buf.String()
 
 		// Assert that key elements for the Brussels response are present
 		assert.Contains(t, actualOutput, "Current:", "Table should have a 'Current' section")
@@ -110,18 +120,12 @@ func TestAppOutput(t *testing.T) {
 }
 
 func TestExecutionError(t *testing.T) {
-	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "config.json")
-	// create a malformed json file
-	err := os.WriteFile(configPath, []byte("{"), 0644)
-	if err != nil {
-		t.Fatalf("Failed to create temp file: %v", err)
-	}
+	weatherProvider := &MockWeatherProvider{}
+	configProvider := &MockConfigProvider{err: errors.New("mock config load error")}
 
-	// Since Cobra prints the error to stderr and returns it, we check both.
-	output, err := executeCommand(configPath, "some-location")
+	cmd := &cobra.Command{}
+	err := runApp(cmd, []string{"some-location"}, weatherProvider, configProvider)
 
-	assert.Error(t, err, "Expected an error to be returned from Execute()")
-	assert.Contains(t, output, "unexpected EOF", "The error message should be printed to the console")
+	assert.Error(t, err, "Expected an error to be returned from runApp()")
+	assert.EqualError(t, err, "mock config load error", "The error message should be the one from the mock")
 }
-
