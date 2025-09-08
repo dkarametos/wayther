@@ -41,40 +41,55 @@ func (cp *ConfigPath) isCustom() bool {
 }
 
 
-// Config holds the application configuration
-type Config struct {
-	APIKey         string   `json:"apiKey,omitempty"`
-	Location       string   `json:"location"`
-	Logger         bool     `json:"logger"`
+// OutputConfig holds the configuration for a specific output type (e.g., JSON, table).
+type OutputConfig struct {
 	CurrentFmt     string   `json:"currentFmt,omitempty"`
 	CurrentFields  []any    `json:"current,omitempty"`
 	ForecastFmt    string   `json:"forecastFmt,omitempty"`
 	ForecastFields []any    `json:"forecast,omitempty"`
-	Output         string   `json:"output,omitempty"`
+}
+
+// Config holds the application configuration.
+type Config struct {
+	APIKey         string       `json:"apiKey,omitempty"`
+	Location       string       `json:"location"`
+	Logger         bool         `json:"logger"`
+	JSON           OutputConfig `json:"json,omitempty"`
+	Table          OutputConfig `json:"table,omitempty"`
+	OutputType     string       `json:"outputType,omitempty"`
 }
 
 // SetDefaults sets the default values for the configuration.
 func (c *Config) SetDefaults() {
-	if c.CurrentFmt == "" {
-		c.CurrentFmt = ""
+	if c.JSON.CurrentFmt == "" {
+		c.JSON.CurrentFmt = "%s  %.1f°"
+	}
+	if len(c.JSON.CurrentFields) == 0 {
+		c.JSON.CurrentFields = []any{}
+	}
+	if c.JSON.ForecastFmt == "" {
+		c.JSON.ForecastFmt = "%5s: %2s %5.1f° [%5.1f°]"
+	}
+	if len(c.JSON.ForecastFields) == 0 {
+		c.JSON.ForecastFields = []any{}
 	}
 
-	if len(c.CurrentFields) == 0 {
-		c.CurrentFields = []any{}
+	if c.Table.CurrentFmt == "" {
+		c.Table.CurrentFmt = "%s %.1f°\n%s - %s"
+	}
+	if len(c.Table.CurrentFields) == 0 {
+		c.Table.CurrentFields = []any{}
+	}
+	if c.Table.ForecastFmt == "" {
+		c.Table.ForecastFmt = "%s: %2s %5.1f° [%5.1f°]"
+	}
+	if len(c.Table.ForecastFields) == 0 {
+		c.Table.ForecastFields = []any{}
 	}
 
-	if c.ForecastFmt == "" {
-		c.ForecastFmt = "" 
+	if c.OutputType == "" {
+		c.OutputType = "table"
 	}
-
-	if len(c.ForecastFields) == 0 {
-		c.ForecastFields = []any{}
-	}
-
-	if c.Output == "" {
-		c.Output = "table"
-	}
-
 }
 
 
@@ -90,34 +105,47 @@ func (c *Config) MergeConfigs(customConfig *Config) {
 
 	c.Logger = customConfig.Logger
 	
-	if customConfig.CurrentFmt != "" {
-		c.CurrentFmt = customConfig.CurrentFmt
+	if customConfig.JSON.CurrentFmt != "" {
+		c.JSON.CurrentFmt = customConfig.JSON.CurrentFmt
+	}
+	if len(customConfig.JSON.CurrentFields) > 0 {
+		c.JSON.CurrentFields = customConfig.JSON.CurrentFields
+	}
+	if customConfig.JSON.ForecastFmt != "" {
+		c.JSON.ForecastFmt = customConfig.JSON.ForecastFmt
+	}
+	if len(customConfig.JSON.ForecastFields) > 0 {
+		c.JSON.ForecastFields = customConfig.JSON.ForecastFields
 	}
 
-	if len(customConfig.CurrentFields) > 0 {
-		c.CurrentFields = customConfig.CurrentFields
+	if customConfig.Table.CurrentFmt != "" {
+		c.Table.CurrentFmt = customConfig.Table.CurrentFmt
+	}
+	if len(customConfig.Table.CurrentFields) > 0 {
+		c.Table.CurrentFields = customConfig.Table.CurrentFields
+	}
+	if customConfig.Table.ForecastFmt != "" {
+		c.Table.ForecastFmt = customConfig.Table.ForecastFmt
+	}
+	if len(customConfig.Table.ForecastFields) > 0 {
+		c.Table.ForecastFields = customConfig.Table.ForecastFields
 	}
 
-	if customConfig.ForecastFmt != "" {
-		c.ForecastFmt = customConfig.ForecastFmt
-	}
-
-	if len(customConfig.ForecastFields) > 0 {
-		c.ForecastFields = customConfig.ForecastFields
-	}
-
-	if customConfig.Output != "" {
-		c.Output = customConfig.Output
+	if customConfig.OutputType != "" {
+		c.OutputType = customConfig.OutputType
 	}
 }
 
-// ParseCommand parses the command-line arguments and flags and updates the Config struct.
+// ParseCommand parses command-line flags and arguments to override configuration settings.
+// It determines the output type (JSON or table) and location from the command line.
+// If the output is not a terminal, it defaults to JSON.
+// It also configures a syslog writer if logging is enabled in the configuration.
 func (c *Config) ParseCommand(cmd *cobra.Command, args []string, isTerminal func(uintptr) bool) {
 
 	//put a switch here.. 
-	c.Output, _ =cmd.Flags().GetString("output")	
+	c.OutputType, _ =cmd.Flags().GetString("output")	
 	if !isTerminal(os.Stdout.Fd()) {
-		c.Output = "json"
+		c.OutputType = "json"
 	}
 
 	if len(args) > 0 {

@@ -9,6 +9,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// WeatherProvider is an interface for fetching weather data.
+type WeatherProvider interface {
+	GetWeather(location, apiKey string) (*WeatherAPIResponse, error)
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "wayther [Location]",
 	Short: "A simple weather API client",
@@ -22,7 +27,7 @@ Configuration:
   If no configuration file is found, you will be prompted to create one interactively.
   The 'logger' key in the config (boolean, defaults to false) enables syslog output if true.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		weatherProvider := &APIWeatherProvider{}
+		weatherProvider := &weatherapiProvider{}
 		configProvider  := &FileConfigProvider{}
 		return runApp(cmd, args, weatherProvider, configProvider, isatty.IsTerminal, time.Now)
 	},
@@ -44,9 +49,9 @@ func runApp(cmd *cobra.Command, args []string, weatherProvider WeatherProvider, 
 	}
 	config.ParseCommand(cmd, args, isTerminal)
 
-	weather, err := weatherProvider.GetWeatherAPI(config.Location, config.APIKey)
+	weather, err := weatherProvider.GetWeather(config.Location, config.APIKey)
 	if err != nil {
-		if config.Output == "json" {
+		if config.OutputType == "json" {
 			fmt.Printf("{\"text\":\" N/A ☢ \",\"tooltip\":\" error fetching weather: %s \"}", err)
 			os.Exit(0)
 		}
@@ -54,10 +59,10 @@ func runApp(cmd *cobra.Command, args []string, weatherProvider WeatherProvider, 
 	}
 
 	// Format output based on flags or TTY
-	if config.Output == "json" {
-		fmt.Println(formatJSON(weather, nowFunc))
+	if config.OutputType == "json" {
+		fmt.Println(formatJSON(weather, config, nowFunc))
 	} else {
-		fmt.Println(formatTable(weather, nowFunc))
+		fmt.Println(formatTable(weather, config, nowFunc))
 	}
 
 	return nil

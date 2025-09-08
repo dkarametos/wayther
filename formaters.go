@@ -10,14 +10,14 @@ import (
 )
 
 // formatTable formats the weather data into a human-readable table
-func formatTable(weather *WeatherAPIResponse, nowFunc func() time.Time) string {
+func formatTable(weather *WeatherAPIResponse, config *Config, nowFunc func() time.Time) string {
 	t := table.NewWriter()
 	t.SetStyle(table.StyleLight)
 
 	// Current section
 	t.AppendRow(table.Row{"Current:"})
 	t.AppendSeparator()
-	currentLine := fmt.Sprintf("%s %.1f°\n%s - %s", weather.Current.Condition.Emoji, weather.Current.TempC, weather.Location.Name, weather.Location.Country)
+	currentLine := fmt.Sprintf(config.Table.CurrentFmt, weather.Current.Condition.Emoji, weather.Current.TempC, weather.Location.Name, weather.Location.Country)
 	t.AppendRow(table.Row{currentLine})
 
 	// Hourly Forecast section
@@ -34,7 +34,7 @@ func formatTable(weather *WeatherAPIResponse, nowFunc func() time.Time) string {
 					continue
 				}
 
-				hourlyLine := fmt.Sprintf("%s: %2s %5.1f° [%5.1f°]", timeVal.Format("15:04"), hour.Condition.Emoji, hour.TempC, hour.FeelslikeC)
+				hourlyLine := fmt.Sprintf(config.Table.ForecastFmt, timeVal.Format("15:04"), hour.Condition.Emoji, hour.TempC, hour.FeelslikeC)
 				t.AppendRow(table.Row{hourlyLine})
 
 				//we need this to restrict the results to 24hours
@@ -49,9 +49,9 @@ func formatTable(weather *WeatherAPIResponse, nowFunc func() time.Time) string {
 }
 
 // formatJSON formats the weather data into a JSON string
-func formatJSON(weather *WeatherAPIResponse, nowFunc func() time.Time) string {
+func formatJSON(weather *WeatherAPIResponse, config *Config, nowFunc func() time.Time) string {
 	// Construct the 'text' field
-	text := fmt.Sprintf("%s  %.1f°", weather.Current.Condition.Emoji, weather.Current.TempC)
+	text := fmt.Sprintf(config.JSON.CurrentFmt, weather.Current.Condition.Emoji, weather.Current.TempC)
 
 	// Construct the 'tooltip' field
 	tooltip := []string{}
@@ -63,7 +63,7 @@ func formatJSON(weather *WeatherAPIResponse, nowFunc func() time.Time) string {
 						continue
 					}
 
-					tooltip = append(tooltip, fmt.Sprintf("%5s: %2s %5.1f° [%5.1f°]", timeVal.Format("15:04"), hour.Condition.Emoji, hour.TempC, hour.FeelslikeC))
+					tooltip = append(tooltip, fmt.Sprintf(config.JSON.ForecastFmt, timeVal.Format("15:04"), hour.Condition.Emoji, hour.TempC, hour.FeelslikeC))
 
 					if timeVal.After(nowFunc().Add(time.Hour * 23)) {
 						break

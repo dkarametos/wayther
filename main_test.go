@@ -35,7 +35,7 @@ type MockWeatherProvider struct {
 	err          error
 }
 
-func (m *MockWeatherProvider) GetWeatherAPI(location, apiKey string) (*WeatherAPIResponse, error) {
+func (m *MockWeatherProvider) GetWeather(location, apiKey string) (*WeatherAPIResponse, error) {
 	return m.mockResponse, m.err
 }
 
@@ -52,7 +52,18 @@ func TestAppOutput(t *testing.T) {
 	// --- Setup Mocks ---
 	mockResponse := loadMockResponse(t)
 	weatherProvider := &MockWeatherProvider{mockResponse: mockResponse}
-	configProvider := &MockConfigProvider{mockConfig: &Config{APIKey: "mock-key", Location: "Brussels"}}
+	configProvider := &MockConfigProvider{mockConfig: &Config{
+		APIKey:   "mock-key",
+		Location: "Brussels",
+		JSON: OutputConfig{
+			CurrentFmt:  "%s  %.1f°",
+			ForecastFmt: "%5s: %2s %5.1f° [%5.1f°]",
+		},
+		Table: OutputConfig{
+			CurrentFmt:  "%s %.1f°\n%s - %s",
+			ForecastFmt: "%s: %2s %5.1f° [%5.1f°]",
+		},
+	}}
 
 	mockNowFunc := func() time.Time {
 		return time.Unix(mockResponse.Location.LocaltimeEpoch, 0)
@@ -64,6 +75,7 @@ func TestAppOutput(t *testing.T) {
 		r, w, _ := os.Pipe()
 		os.Stdout = w
 
+		configProvider.mockConfig.OutputType = "json"
 		cmd := &cobra.Command{}
 		err := runApp(cmd, []string{"Brussels"}, weatherProvider, configProvider, func(fd uintptr) bool { return false }, mockNowFunc)
 		assert.NoError(t, err)
@@ -88,6 +100,7 @@ func TestAppOutput(t *testing.T) {
 		r, w, _ := os.Pipe()
 		os.Stdout = w
 
+		configProvider.mockConfig.OutputType = "table"
 		cmd := &cobra.Command{}
 		err := runApp(cmd, []string{"Brussels"}, weatherProvider, configProvider, func(fd uintptr) bool { return true }, mockNowFunc)
 		assert.NoError(t, err)

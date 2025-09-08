@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestAPIWeatherProvider_GetWeatherAPI(t *testing.T) {
+func TestWeatherProvider_GetWeather(t *testing.T) {
 
 
 	// Create a mock HTTP server
@@ -45,8 +45,8 @@ func TestAPIWeatherProvider_GetWeatherAPI(t *testing.T) {
 	defer func() { weatherAPIURL = oldWeatherAPIURL }()
 
 	// Call the function under test
-	provider := &APIWeatherProvider{}
-	weather, err := provider.GetWeatherAPI("London", "test_api_key")
+	provider := &weatherapiProvider{}
+	weather, err := provider.GetWeather("London", "test_api_key")
 	if err != nil {
 		t.Fatalf("GetWeather returned an error: %v", err)
 	}
