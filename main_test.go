@@ -55,13 +55,15 @@ func TestAppOutput(t *testing.T) {
 	configProvider := &MockConfigProvider{mockConfig: &Config{
 		APIKey:   "mock-key",
 		Location: "Brussels",
-		JSON: OutputConfig{
-			CurrentFmt:  "%s  %.1f°",
-			ForecastFmt: "%5s: %2s %5.1f° [%5.1f°]",
-		},
-		Table: OutputConfig{
-			CurrentFmt:  "%s %.1f°\n%s - %s",
-			ForecastFmt: "%s: %2s %5.1f° [%5.1f°]",
+		Outputs: Outputs{
+			JSON: OutputConfig{
+				CurrentFmt:  "%s  %.1f°",
+				ForecastFmt: "%5s: %2s %5.1f° [%5.1f°]",
+			},
+			Table: OutputConfig{
+				CurrentFmt:  "%s %.1f°\n%s - %s",
+				ForecastFmt: "%s: %2s %5.1f° [%5.1f°]",
+			},
 		},
 	}}
 

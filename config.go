@@ -49,42 +49,46 @@ type OutputConfig struct {
 	ForecastFields []any    `json:"forecast,omitempty"`
 }
 
+type Outputs struct {
+	JSON  OutputConfig `json:"json,omitempty"`
+	Table OutputConfig `json:"table,omitempty"`
+}
+
 // Config holds the application configuration.
 type Config struct {
-	APIKey         string       `json:"apiKey,omitempty"`
-	Location       string       `json:"location"`
-	Logger         bool         `json:"logger"`
-	JSON           OutputConfig `json:"json,omitempty"`
-	Table          OutputConfig `json:"table,omitempty"`
-	OutputType     string       `json:"outputType,omitempty"`
+	APIKey     string  `json:"apiKey,omitempty"`
+	Location   string  `json:"location"`
+	Logger     bool    `json:"logger"`
+	Outputs    Outputs `json:"outputs,omitempty"`
+	OutputType string  `json:"outputType,omitempty"`
 }
 
 // SetDefaults sets the default values for the configuration.
 func (c *Config) SetDefaults() {
-	if c.JSON.CurrentFmt == "" {
-		c.JSON.CurrentFmt = "%s  %.1f°"
+	if c.Outputs.JSON.CurrentFmt == "" {
+		c.Outputs.JSON.CurrentFmt = "%s  %.1f°"
 	}
-	if len(c.JSON.CurrentFields) == 0 {
-		c.JSON.CurrentFields = []any{}
+	if len(c.Outputs.JSON.CurrentFields) == 0 {
+		c.Outputs.JSON.CurrentFields = []any{}
 	}
-	if c.JSON.ForecastFmt == "" {
-		c.JSON.ForecastFmt = "%5s: %2s %5.1f° [%5.1f°]"
+	if c.Outputs.JSON.ForecastFmt == "" {
+		c.Outputs.JSON.ForecastFmt = "%5s: %2s %5.1f° [%5.1f°]"
 	}
-	if len(c.JSON.ForecastFields) == 0 {
-		c.JSON.ForecastFields = []any{}
+	if len(c.Outputs.JSON.ForecastFields) == 0 {
+		c.Outputs.JSON.ForecastFields = []any{}
 	}
 
-	if c.Table.CurrentFmt == "" {
-		c.Table.CurrentFmt = "%s %.1f°\n%s - %s"
+	if c.Outputs.Table.CurrentFmt == "" {
+		c.Outputs.Table.CurrentFmt = "%s %.1f°\n%s - %s"
 	}
-	if len(c.Table.CurrentFields) == 0 {
-		c.Table.CurrentFields = []any{}
+	if len(c.Outputs.Table.CurrentFields) == 0 {
+		c.Outputs.Table.CurrentFields = []any{}
 	}
-	if c.Table.ForecastFmt == "" {
-		c.Table.ForecastFmt = "%s: %2s %5.1f° [%5.1f°]"
+	if c.Outputs.Table.ForecastFmt == "" {
+		c.Outputs.Table.ForecastFmt = "%s: %2s %5.1f° [%5.1f°]"
 	}
-	if len(c.Table.ForecastFields) == 0 {
-		c.Table.ForecastFields = []any{}
+	if len(c.Outputs.Table.ForecastFields) == 0 {
+		c.Outputs.Table.ForecastFields = []any{}
 	}
 
 	if c.OutputType == "" {
@@ -104,31 +108,31 @@ func (c *Config) MergeConfigs(customConfig *Config) {
 	}
 
 	c.Logger = customConfig.Logger
-	
-	if customConfig.JSON.CurrentFmt != "" {
-		c.JSON.CurrentFmt = customConfig.JSON.CurrentFmt
+
+	if customConfig.Outputs.JSON.CurrentFmt != "" {
+		c.Outputs.JSON.CurrentFmt = customConfig.Outputs.JSON.CurrentFmt
 	}
-	if len(customConfig.JSON.CurrentFields) > 0 {
-		c.JSON.CurrentFields = customConfig.JSON.CurrentFields
+	if len(customConfig.Outputs.JSON.CurrentFields) > 0 {
+		c.Outputs.JSON.CurrentFields = customConfig.Outputs.JSON.CurrentFields
 	}
-	if customConfig.JSON.ForecastFmt != "" {
-		c.JSON.ForecastFmt = customConfig.JSON.ForecastFmt
+	if customConfig.Outputs.JSON.ForecastFmt != "" {
+		c.Outputs.JSON.ForecastFmt = customConfig.Outputs.JSON.ForecastFmt
 	}
-	if len(customConfig.JSON.ForecastFields) > 0 {
-		c.JSON.ForecastFields = customConfig.JSON.ForecastFields
+	if len(customConfig.Outputs.JSON.ForecastFields) > 0 {
+		c.Outputs.JSON.ForecastFields = customConfig.Outputs.JSON.ForecastFields
 	}
 
-	if customConfig.Table.CurrentFmt != "" {
-		c.Table.CurrentFmt = customConfig.Table.CurrentFmt
+	if customConfig.Outputs.Table.CurrentFmt != "" {
+		c.Outputs.Table.CurrentFmt = customConfig.Outputs.Table.CurrentFmt
 	}
-	if len(customConfig.Table.CurrentFields) > 0 {
-		c.Table.CurrentFields = customConfig.Table.CurrentFields
+	if len(customConfig.Outputs.Table.CurrentFields) > 0 {
+		c.Outputs.Table.CurrentFields = customConfig.Outputs.Table.CurrentFields
 	}
-	if customConfig.Table.ForecastFmt != "" {
-		c.Table.ForecastFmt = customConfig.Table.ForecastFmt
+	if customConfig.Outputs.Table.ForecastFmt != "" {
+		c.Outputs.Table.ForecastFmt = customConfig.Outputs.Table.ForecastFmt
 	}
-	if len(customConfig.Table.ForecastFields) > 0 {
-		c.Table.ForecastFields = customConfig.Table.ForecastFields
+	if len(customConfig.Outputs.Table.ForecastFields) > 0 {
+		c.Outputs.Table.ForecastFields = customConfig.Outputs.Table.ForecastFields
 	}
 
 	if customConfig.OutputType != "" {

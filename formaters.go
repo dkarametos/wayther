@@ -17,7 +17,7 @@ func formatTable(weather *WeatherAPIResponse, config *Config, nowFunc func() tim
 	// Current section
 	t.AppendRow(table.Row{"Current:"})
 	t.AppendSeparator()
-	currentLine := fmt.Sprintf(config.Table.CurrentFmt, weather.Current.Condition.Emoji, weather.Current.TempC, weather.Location.Name, weather.Location.Country)
+	currentLine := fmt.Sprintf(config.Outputs.Table.CurrentFmt, weather.Current.Condition.Emoji, weather.Current.TempC, weather.Location.Name, weather.Location.Country)
 	t.AppendRow(table.Row{currentLine})
 
 	// Hourly Forecast section
@@ -34,7 +34,7 @@ func formatTable(weather *WeatherAPIResponse, config *Config, nowFunc func() tim
 					continue
 				}
 
-				hourlyLine := fmt.Sprintf(config.Table.ForecastFmt, timeVal.Format("15:04"), hour.Condition.Emoji, hour.TempC, hour.FeelslikeC)
+				hourlyLine := fmt.Sprintf(config.Outputs.Table.ForecastFmt, timeVal.Format("15:04"), hour.Condition.Emoji, hour.TempC, hour.FeelslikeC)
 				t.AppendRow(table.Row{hourlyLine})
 
 				//we need this to restrict the results to 24hours
@@ -51,7 +51,7 @@ func formatTable(weather *WeatherAPIResponse, config *Config, nowFunc func() tim
 // formatJSON formats the weather data into a JSON string
 func formatJSON(weather *WeatherAPIResponse, config *Config, nowFunc func() time.Time) string {
 	// Construct the 'text' field
-	text := fmt.Sprintf(config.JSON.CurrentFmt, weather.Current.Condition.Emoji, weather.Current.TempC)
+	text := fmt.Sprintf(config.Outputs.JSON.CurrentFmt, weather.Current.Condition.Emoji, weather.Current.TempC)
 
 	// Construct the 'tooltip' field
 	tooltip := []string{}
@@ -63,7 +63,7 @@ func formatJSON(weather *WeatherAPIResponse, config *Config, nowFunc func() time
 						continue
 					}
 
-					tooltip = append(tooltip, fmt.Sprintf(config.JSON.ForecastFmt, timeVal.Format("15:04"), hour.Condition.Emoji, hour.TempC, hour.FeelslikeC))
+					tooltip = append(tooltip, fmt.Sprintf(config.Outputs.JSON.ForecastFmt, timeVal.Format("15:04"), hour.Condition.Emoji, hour.TempC, hour.FeelslikeC))
 
 					if timeVal.After(nowFunc().Add(time.Hour * 23)) {
 						break

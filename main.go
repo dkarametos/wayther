@@ -16,8 +16,8 @@ type WeatherProvider interface {
 
 var rootCmd = &cobra.Command{
 	Use:   "wayther [Location]",
-	Short: "A simple weather API client",
-	Long: `wayther is a CLI tool for retrieving current weather and forecasts.
+	Short: "A simple weatherapi.com cli client",
+	Long: `wayther is a CLI tool for retrieving current weather and forecasts from weatherapi.com.
 
 You You can provide location as argument.
 Multiple options can be applied simultaneously.
@@ -45,16 +45,14 @@ func runApp(cmd *cobra.Command, args []string, weatherProvider WeatherProvider, 
 
 	config, err := configProvider.LoadConfig(configPath)
 	if err != nil {
+		exitOnJSON(config, err)
 		return err
 	}
 	config.ParseCommand(cmd, args, isTerminal)
 
 	weather, err := weatherProvider.GetWeather(config.Location, config.APIKey)
 	if err != nil {
-		if config.OutputType == "json" {
-			fmt.Printf("{\"text\":\" N/A ☢ \",\"tooltip\":\" error fetching weather: %s \"}", err)
-			os.Exit(0)
-		}
+		exitOnJSON(config, err)
 		return err
 	}
 
@@ -66,6 +64,18 @@ func runApp(cmd *cobra.Command, args []string, weatherProvider WeatherProvider, 
 	}
 
 	return nil
+}
+
+func exitOnJSON(config *Config, err error ) {
+	
+	if config == nil {
+		return
+	}
+
+	if config.OutputType == "json" {
+		fmt.Printf("{\"text\":\" N/A ☢ \",\"tooltip\":\" error fetching weather: %s \"}", err)
+		os.Exit(0)
+	}
 }
 
 func main() {
