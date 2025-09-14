@@ -35,8 +35,32 @@ type MockWeatherProvider struct {
 	err          error
 }
 
-func (m *MockWeatherProvider) GetWeather(location, apiKey string) (*WeatherAPIResponse, error) {
+func (m *MockWeatherProvider) GetWeather(config *Config) (*WeatherAPIResponse, error) {
 	return m.mockResponse, m.err
+}
+
+func (m *MockWeatherProvider) toWeather(w *WeatherAPIResponse) *Weather {
+	var hourlyForecasts []HourlyForecast
+	if len(w.Forecast.Forecastday) > 0 {
+		for _, forecastday := range w.Forecast.Forecastday {
+			for _, hour := range forecastday.Hour {
+				hourlyForecasts = append(hourlyForecasts, HourlyForecast{
+					TimeEpoch:  hour.TimeEpoch,
+					Emoji:      hour.Condition.Emoji,
+					TempC:      hour.TempC,
+					FeelslikeC: hour.FeelslikeC,
+				})
+			}
+		}
+	}
+
+	return &Weather{
+		LocationName:    w.Location.Name,
+		LocationCountry: w.Location.Country,
+		CurrentEmoji:    w.Current.Condition.Emoji,
+		CurrentTempC:    w.Current.TempC,
+		HourlyForecast:  hourlyForecasts,
+	}
 }
 
 type MockConfigProvider struct {
@@ -124,11 +148,16 @@ func TestAppOutput(t *testing.T) {
 }
 
 func TestExecutionError(t *testing.T) {
-	weatherProvider := &MockWeatherProvider{}
-	configProvider := &MockConfigProvider{err: errors.New("mock config load error")}
+	weatherProvider := &MockWeatherProvider{err: errors.New("mock weather error")}
+	configProvider := &MockConfigProvider{mockConfig: &Config{}}
 
 	cmd := &cobra.Command{}
 	err := runApp(cmd, []string{"some-location"}, weatherProvider, configProvider, func(fd uintptr) bool { return true }, time.Now)
+	assert.Error(t, err, "Expected an error to be returned from runApp()")
+	assert.EqualError(t, err, "mock weather error", "The error message should be the one from the mock")
+
+	configProvider = &MockConfigProvider{err: errors.New("mock config load error")}
+	err = runApp(cmd, []string{"some-location"}, weatherProvider, configProvider, func(fd uintptr) bool { return true }, time.Now)
 	assert.Error(t, err, "Expected an error to be returned from runApp()")
 	assert.EqualError(t, err, "mock config load error", "The error message should be the one from the mock")
 }

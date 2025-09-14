@@ -159,14 +159,14 @@ type Hour struct {
 }
 
 // weatherapiProvider is the real implementation of WeatherProvider that uses the weather API.
-type weatherapiProvider struct{}
+type weatherapiProvider struct { }
 
 // GetWeather fetches weather forecast data from the WeatherAPI for a given location.
 // It takes the location (e.g., "London") and an API key as input.
 // It returns a pointer to a WeatherAPIResponse struct containing the parsed data,
 // or an error if the request fails or the response cannot be decoded.
-func (p *weatherapiProvider) GetWeather(location, apiKey string) (*WeatherAPIResponse, error) {
-	url := fmt.Sprintf("%s?key=%s&q=%s&days=2&aqi=no&alerts=no", weatherAPIURL, apiKey, location)
+func (p *weatherapiProvider) GetWeather(c *Config) (*WeatherAPIResponse, error) {
+	url := fmt.Sprintf("%s?key=%s&q=%s&days=2&aqi=no&alerts=no", weatherAPIURL, c.APIKey, c.Location)
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -197,4 +197,29 @@ func (p *weatherapiProvider) GetWeather(location, apiKey string) (*WeatherAPIRes
 	}
 
 	return &weatherResp, nil
+}
+
+// toWeather maps the WeatherAPIResponse to the Weather struct.
+func (p *weatherapiProvider)toWeather(w *WeatherAPIResponse) *Weather {
+	var hourlyForecasts []HourlyForecast
+	if len(w.Forecast.Forecastday) > 0 {
+		for _, forecastday := range w.Forecast.Forecastday {
+			for _, hour := range forecastday.Hour {
+				hourlyForecasts = append(hourlyForecasts, HourlyForecast{
+					TimeEpoch:  hour.TimeEpoch,
+					Emoji:      hour.Condition.Emoji,
+					TempC:      hour.TempC,
+					FeelslikeC: hour.FeelslikeC,
+				})
+			}
+		}
+	}
+
+	return &Weather{
+		LocationName:    w.Location.Name,
+		LocationCountry: w.Location.Country,
+		CurrentEmoji:    w.Current.Condition.Emoji,
+		CurrentTempC:    w.Current.TempC,
+		HourlyForecast:  hourlyForecasts,
+	}
 }

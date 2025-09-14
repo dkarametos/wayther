@@ -39,14 +39,17 @@ func TestWeatherProvider_GetWeather(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Temporarily override the weatherAPIURL for testing
-	oldWeatherAPIURL := weatherAPIURL
-	weatherAPIURL = server.URL + "/v1/forecast.json" // Adjust to match the mock server's path
-	defer func() { weatherAPIURL = oldWeatherAPIURL }()
-
 	// Call the function under test
+	originalURL := weatherAPIURL
+	weatherAPIURL = server.URL + "/v1/forecast.json"
+	defer func() { weatherAPIURL = originalURL }()
+
 	provider := &weatherapiProvider{}
-	weather, err := provider.GetWeather("London", "test_api_key")
+	config := &Config{
+		Location: "London",
+		APIKey:   "test_api_key",
+	}
+	weather, err := provider.GetWeather(config)
 	if err != nil {
 		t.Fatalf("GetWeather returned an error: %v", err)
 	}

@@ -9,11 +9,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// WeatherProvider is an interface for fetching weather data.
-type WeatherProvider interface {
-	GetWeather(location, apiKey string) (*WeatherAPIResponse, error)
-}
-
 var rootCmd = &cobra.Command{
 	Use:   "wayther [Location]",
 	Short: "A simple weatherapi.com cli client",
@@ -50,11 +45,12 @@ func runApp(cmd *cobra.Command, args []string, weatherProvider WeatherProvider, 
 	}
 	config.ParseCommand(cmd, args, isTerminal)
 
-	weather, err := weatherProvider.GetWeather(config.Location, config.APIKey)
+	weather, err := NewWeather(weatherProvider, config)
 	if err != nil {
 		exitOnJSON(config, err)
 		return err
 	}
+
 
 	// Format output based on flags or TTY
 	if config.OutputType == "json" {
