@@ -41,55 +41,30 @@ func (cp *ConfigPath) isCustom() bool {
 }
 
 
-// OutputConfig holds the configuration for a specific output type (e.g., JSON, table).
-type OutputConfig struct {
-	CurrentFmt     string   `json:"currentFmt,omitempty"`
-	CurrentFields  []any    `json:"current,omitempty"`
-	ForecastFmt    string   `json:"forecastFmt,omitempty"`
-	ForecastFields []any    `json:"forecast,omitempty"`
-}
 
-type Outputs struct {
-	JSON  OutputConfig `json:"json,omitempty"`
-	Table OutputConfig `json:"table,omitempty"`
-}
 
 // Config holds the application configuration.
 type Config struct {
-	APIKey     string  `json:"apiKey,omitempty"`
-	Location   string  `json:"location"`
-	Logger     bool    `json:"logger"`
-	Outputs    Outputs `json:"outputs,omitempty"`
-	OutputType string  `json:"outputType,omitempty"`
+	APIKey          string  `json:"apiKey,omitempty"`
+	Location        string  `json:"location"`
+	Logger          bool    `json:"logger"`
+	OutputType      string  `json:"outputType,omitempty"`
+	CurrentTmpl     string  `json:"currentTmpl,omitempty"`
+	ForecastTmpl    string  `json:"forecastTmpl,omitempty"`
+	
+	
 }
 
 // SetDefaults sets the default values for the configuration.
 func (c *Config) SetDefaults() {
-	if c.Outputs.JSON.CurrentFmt == "" {
-		c.Outputs.JSON.CurrentFmt = "%s  %.1f°"
+	if c.CurrentTmpl == "" {
+		c.CurrentTmpl = "{{.CurrentEmoji}}  {{.CurrentTempC}}°"
 	}
-	if len(c.Outputs.JSON.CurrentFields) == 0 {
-		c.Outputs.JSON.CurrentFields = []any{}
+	if c.ForecastTmpl == "" {
+		c.ForecastTmpl = "{{.Emoji}} {{.TempC}}° [{{.FeelslikeC}}°]"
 	}
-	if c.Outputs.JSON.ForecastFmt == "" {
-		c.Outputs.JSON.ForecastFmt = "%5s: %2s %5.1f° [%5.1f°]"
-	}
-	if len(c.Outputs.JSON.ForecastFields) == 0 {
-		c.Outputs.JSON.ForecastFields = []any{}
-	}
-
-	if c.Outputs.Table.CurrentFmt == "" {
-		c.Outputs.Table.CurrentFmt = "%s %.1f°\n%s - %s"
-	}
-	if len(c.Outputs.Table.CurrentFields) == 0 {
-		c.Outputs.Table.CurrentFields = []any{}
-	}
-	if c.Outputs.Table.ForecastFmt == "" {
-		c.Outputs.Table.ForecastFmt = "%s: %2s %5.1f° [%5.1f°]"
-	}
-	if len(c.Outputs.Table.ForecastFields) == 0 {
-		c.Outputs.Table.ForecastFields = []any{}
-	}
+	
+	
 
 	if c.OutputType == "" {
 		c.OutputType = "table"
@@ -109,31 +84,14 @@ func (c *Config) MergeConfigs(customConfig *Config) {
 
 	c.Logger = customConfig.Logger
 
-	if customConfig.Outputs.JSON.CurrentFmt != "" {
-		c.Outputs.JSON.CurrentFmt = customConfig.Outputs.JSON.CurrentFmt
+	if customConfig.CurrentTmpl != "" {
+		c.CurrentTmpl = customConfig.CurrentTmpl
 	}
-	if len(customConfig.Outputs.JSON.CurrentFields) > 0 {
-		c.Outputs.JSON.CurrentFields = customConfig.Outputs.JSON.CurrentFields
+	if customConfig.ForecastTmpl != "" {
+		c.ForecastTmpl = customConfig.ForecastTmpl
 	}
-	if customConfig.Outputs.JSON.ForecastFmt != "" {
-		c.Outputs.JSON.ForecastFmt = customConfig.Outputs.JSON.ForecastFmt
-	}
-	if len(customConfig.Outputs.JSON.ForecastFields) > 0 {
-		c.Outputs.JSON.ForecastFields = customConfig.Outputs.JSON.ForecastFields
-	}
-
-	if customConfig.Outputs.Table.CurrentFmt != "" {
-		c.Outputs.Table.CurrentFmt = customConfig.Outputs.Table.CurrentFmt
-	}
-	if len(customConfig.Outputs.Table.CurrentFields) > 0 {
-		c.Outputs.Table.CurrentFields = customConfig.Outputs.Table.CurrentFields
-	}
-	if customConfig.Outputs.Table.ForecastFmt != "" {
-		c.Outputs.Table.ForecastFmt = customConfig.Outputs.Table.ForecastFmt
-	}
-	if len(customConfig.Outputs.Table.ForecastFields) > 0 {
-		c.Outputs.Table.ForecastFields = customConfig.Outputs.Table.ForecastFields
-	}
+	
+	
 
 	if customConfig.OutputType != "" {
 		c.OutputType = customConfig.OutputType

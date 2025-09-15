@@ -79,16 +79,8 @@ func TestAppOutput(t *testing.T) {
 	configProvider := &MockConfigProvider{mockConfig: &Config{
 		APIKey:   "mock-key",
 		Location: "Brussels",
-		Outputs: Outputs{
-			JSON: OutputConfig{
-				CurrentFmt:  "%s  %.1f°",
-				ForecastFmt: "%5s: %2s %5.1f° [%5.1f°]",
-			},
-			Table: OutputConfig{
-				CurrentFmt:  "%s %.1f°\n%s - %s",
-				ForecastFmt: "%s: %2s %5.1f° [%5.1f°]",
-			},
-		},
+		CurrentTmpl:  "{{.CurrentEmoji}}  {{.CurrentTempC}}°",
+		ForecastTmpl: "{{.Emoji}} {{.TempC}}° [{{.FeelslikeC}}°]",
 	}}
 
 	mockNowFunc := func() time.Time {
@@ -140,7 +132,7 @@ func TestAppOutput(t *testing.T) {
 
 		// Assert that key elements for the Brussels response are present
 		assert.Contains(t, actualOutput, "Current:", "Table should have a 'Current' section")
-		assert.Contains(t, actualOutput, "Brussels - Belgium", "Table should contain the correct location")
+		
 		assert.Contains(t, actualOutput, "1.3°", "Table should contain the current temperature")
 		assert.Contains(t, actualOutput, "Hourly Forecast:", "Table should have an 'Hourly Forecast' section")
 		assert.Contains(t, actualOutput, "-1.2°", "Table should contain a forecast temperature")

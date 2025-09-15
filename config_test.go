@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"reflect"
+	
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -52,7 +52,7 @@ func createTempConfigFile(t *testing.T, dir, filename string, config *Config) st
 
 func TestLoadConfig_DefaultConfigExists(t *testing.T) {
 	tempDir := t.TempDir()
-	defaultConfig := &Config{APIKey: "default_key", Location: "DefaultCity", Logger: false, Outputs: Outputs{JSON: OutputConfig{CurrentFields: []any{}, ForecastFields: []any{}}, Table: OutputConfig{CurrentFields: []any{}, ForecastFields: []any{}}}}
+	defaultConfig := &Config{APIKey: "default_key", Location: "DefaultCity", Logger: false}
 	defaultConfigPath := createTempConfigFile(t, tempDir, "wayther/config.json", defaultConfig)
 
 	configPath := ConfigPath{
@@ -73,24 +73,12 @@ func TestLoadConfig_DefaultConfigExists(t *testing.T) {
 	if loadedConfig.Logger != defaultConfig.Logger {
 		t.Errorf("Expected Logger %v, got %v", defaultConfig.Logger, loadedConfig.Logger)
 	}
-	if !reflect.DeepEqual(loadedConfig.Outputs.JSON.CurrentFields, defaultConfig.Outputs.JSON.CurrentFields) {
-		t.Errorf("Expected JSON CurrentFields %v, got %v", defaultConfig.Outputs.JSON.CurrentFields, loadedConfig.Outputs.JSON.CurrentFields)
-	}
-	if !reflect.DeepEqual(loadedConfig.Outputs.JSON.ForecastFields, defaultConfig.Outputs.JSON.ForecastFields) {
-		t.Errorf("Expected JSON ForecastFields %v, got %v", defaultConfig.Outputs.JSON.ForecastFields, loadedConfig.Outputs.JSON.ForecastFields)
-	}
-	if !reflect.DeepEqual(loadedConfig.Outputs.Table.CurrentFields, defaultConfig.Outputs.Table.CurrentFields) {
-		t.Errorf("Expected Table CurrentFields %v, got %v", defaultConfig.Outputs.Table.CurrentFields, loadedConfig.Outputs.Table.CurrentFields)
-	}
-	if !reflect.DeepEqual(loadedConfig.Outputs.Table.ForecastFields, defaultConfig.Outputs.Table.ForecastFields) {
-		t.Errorf("Expected Table ForecastFields %v, got %v", defaultConfig.Outputs.Table.ForecastFields, loadedConfig.Outputs.Table.ForecastFields)
-	}
 }
 
 func TestLoadConfig_CustomConfigOverridesDefault(t *testing.T) {
 	tempDir := t.TempDir()
-	defaultConfig := &Config{APIKey: "default_key", Location: "DefaultCity", Logger: false, Outputs: Outputs{JSON: OutputConfig{CurrentFields: []any{}, ForecastFields: []any{}}, Table: OutputConfig{CurrentFields: []any{}, ForecastFields: []any{}}}}
-	customConfig := &Config{APIKey: "custom_key", Location: "CustomCity", Logger: true, OutputType: "json", Outputs: Outputs{JSON: OutputConfig{CurrentFmt: "custom_json_current", ForecastFmt: "custom_json_forecast"}, Table: OutputConfig{CurrentFmt: "custom_table_current", ForecastFmt: "custom_table_forecast"}}}
+	defaultConfig := &Config{APIKey: "default_key", Location: "DefaultCity", Logger: false}
+	customConfig := &Config{APIKey: "custom_key", Location: "CustomCity", Logger: true, OutputType: "json", CurrentTmpl: "custom_json_template", ForecastTmpl: "custom_json_forecast"}
 
 	defaultConfigPath := createTempConfigFile(t, tempDir, "wayther/config.json", defaultConfig)
 	customConfigPath := createTempConfigFile(t, tempDir, "custom/config.json", customConfig)
@@ -140,7 +128,7 @@ func simulateUserInput(t *testing.T, input string) *os.File {
 
 func TestLoadConfig_CreateCustomConfig(t *testing.T) {
 	tempDir := t.TempDir()
-	defaultConfig := &Config{APIKey: "default_key", Location: "DefaultCity", Logger: false, Outputs: Outputs{JSON: OutputConfig{CurrentFields: []any{}, ForecastFields: []any{}}, Table: OutputConfig{CurrentFields: []any{}, ForecastFields: []any{}}}}
+	defaultConfig := &Config{APIKey: "default_key", Location: "DefaultCity", Logger: false}
 	defaultConfigPath := createTempConfigFile(t, tempDir, "wayther/config.json", defaultConfig)
 	customConfigPath := filepath.Join(tempDir, "custom/config.json")
 
@@ -178,32 +166,15 @@ func TestSetDefaults(t *testing.T) {
 	}
 
 	// Verify JSON defaults
-	if config.Outputs.JSON.CurrentFmt == "" {
-		t.Errorf("Expected JSON.CurrentFmt to have a default value")
+	if config.CurrentTmpl == "" {
+		t.Errorf("Expected CurrentTmpl to have a default value")
 	}
-	if len(config.Outputs.JSON.CurrentFields) != 0 {
-		t.Errorf("Expected JSON.CurrentFields to be empty, got %v", config.Outputs.JSON.CurrentFields)
-	}
-	if config.Outputs.JSON.ForecastFmt == "" {
-		t.Errorf("Expected JSON.ForecastFmt to have a default value")
-	}
-	if len(config.Outputs.JSON.ForecastFields) != 0 {
-		t.Errorf("Expected JSON.ForecastFields to be empty, got %v", config.Outputs.JSON.ForecastFields)
+	if config.ForecastTmpl == "" {
+		t.Errorf("Expected ForecastTmpl to have a default value")
 	}
 
 	// Verify Table defaults
-	if config.Outputs.Table.CurrentFmt == "" {
-		t.Errorf("Expected Table.CurrentFmt to have a default value")
-	}
-	if len(config.Outputs.Table.CurrentFields) != 0 {
-		t.Errorf("Expected Table.CurrentFields to be empty, got %v", config.Outputs.Table.CurrentFields)
-	}
-	if config.Outputs.Table.ForecastFmt == "" {
-		t.Errorf("Expected Table.ForecastFmt to have a default value")
-	}
-	if len(config.Outputs.Table.ForecastFields) != 0 {
-		t.Errorf("Expected Table.ForecastFields to be empty, got %v", config.Outputs.Table.ForecastFields)
-	}
+	
 }
 
 func TestMergeConfigs(t *testing.T) {
@@ -212,10 +183,8 @@ func TestMergeConfigs(t *testing.T) {
 		Location:   "BaseCity",
 		Logger:     false,
 		OutputType: "table",
-		Outputs: Outputs{
-			JSON:  OutputConfig{CurrentFmt: "base_json_current"},
-			Table: OutputConfig{CurrentFmt: "base_table_current"},
-		},
+		CurrentTmpl: "base_json_template",
+		ForecastTmpl: "base_json_forecast",
 	}
 
 	customConfig := &Config{
@@ -223,10 +192,8 @@ func TestMergeConfigs(t *testing.T) {
 		Location:   "CustomCity",
 		Logger:     true,
 		OutputType: "json",
-		Outputs: Outputs{
-			JSON:  OutputConfig{CurrentFmt: "custom_json_current"},
-			Table: OutputConfig{CurrentFmt: "custom_table_current"},
-		},
+		CurrentTmpl: "custom_json_template",
+		ForecastTmpl: "custom_json_forecast",
 	}
 
 	baseConfig.MergeConfigs(customConfig)
@@ -243,11 +210,11 @@ func TestMergeConfigs(t *testing.T) {
 	if baseConfig.OutputType != "json" {
 		t.Errorf("Expected OutputType to be 'json', got '%s'", baseConfig.OutputType)
 	}
-	if baseConfig.Outputs.JSON.CurrentFmt != "custom_json_current" {
-		t.Errorf("Expected JSON.CurrentFmt to be 'custom_json_current', got '%s'", baseConfig.Outputs.JSON.CurrentFmt)
+	if baseConfig.CurrentTmpl != "custom_json_template" {
+		t.Errorf("Expected CurrentTmpl to be 'custom_json_template', got '%s'", baseConfig.CurrentTmpl)
 	}
-	if baseConfig.Outputs.Table.CurrentFmt != "custom_table_current" {
-		t.Errorf("Expected Table.CurrentFmt to be 'custom_table_current', got '%s'", baseConfig.Outputs.Table.CurrentFmt)
+	if baseConfig.ForecastTmpl != "custom_json_forecast" {
+		t.Errorf("Expected ForecastTmpl to be 'custom_json_forecast', got '%s'", baseConfig.ForecastTmpl)
 	}
 }
 

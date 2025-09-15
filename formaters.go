@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -17,8 +19,19 @@ func formatTable(weather *Weather, config *Config, nowFunc func() time.Time) str
 	// Current section
 	t.AppendRow(table.Row{"Current:"})
 	t.AppendSeparator()
-	currentLine := fmt.Sprintf(config.Outputs.Table.CurrentFmt, weather.CurrentEmoji, weather.CurrentTempC, weather.LocationName, weather.LocationCountry)
-	t.AppendRow(table.Row{currentLine})
+	// Create a new template and parse the template string
+	currentTmpl, err := template.New("table-current").Parse(config.CurrentTmpl)
+	if err != nil {
+		fmt.Errorf("error creating table template: %w", err)
+	}
+
+	// Create a buffer to store the executed template
+	var currentLine bytes.Buffer
+	err = currentTmpl.Execute(&currentLine, weather)
+	if err != nil {
+		fmt.Errorf("error executing table template: %w", err)
+	}
+	t.AppendRow(table.Row{currentLine.String()})
 
 	// Hourly Forecast section
 	t.AppendSeparator()
@@ -27,14 +40,26 @@ func formatTable(weather *Weather, config *Config, nowFunc func() time.Time) str
 
 	// Hourly forecast details
 	if len(weather.HourlyForecast) > 0 {
+		// Create a new template and parse the template string
+		hourlyTmpl, err := template.New("table-hourly").Parse(config.ForecastTmpl)
+		if err != nil {
+			fmt.Errorf("error creating table template: %w", err)
+		}
+
 		for _, hour := range weather.HourlyForecast {
 			timeVal := time.Unix(hour.TimeEpoch, 0)
 			if timeVal.Before(nowFunc()) {
 				continue
 			}
 
-			hourlyLine := fmt.Sprintf(config.Outputs.Table.ForecastFmt, timeVal.Format("15:04"), hour.Emoji, hour.TempC, hour.FeelslikeC)
-			t.AppendRow(table.Row{hourlyLine})
+			// Create a buffer to store the executed template
+			var hourlyLine bytes.Buffer
+			err = hourlyTmpl.Execute(&hourlyLine, hour)
+			if err != nil {
+				fmt.Errorf("error executing table template: %w", err)
+			}
+
+			t.AppendRow(table.Row{hourlyLine.String()})
 
 			//we need this to restrict the results to 24hours
 			if timeVal.After(nowFunc().Add(time.Hour * 23)) {
@@ -48,23 +73,48 @@ func formatTable(weather *Weather, config *Config, nowFunc func() time.Time) str
 
 // formatJSON formats the weather data into a JSON string
 func formatJSON(weather *Weather, config *Config, nowFunc func() time.Time) string {
-	// Construct the 'text' field
-	text := fmt.Sprintf(config.Outputs.JSON.CurrentFmt, weather.CurrentEmoji, weather.CurrentTempC)
+
+	// Create a new template and parse the template string
+	t, err := template.New("json-text").Parse(config.CurrentTmpl)
+	if err != nil {
+		fmt.Errorf("error creating json template: %w", err)
+	}
+
+	// Create a buffer to store the executed template
+	var text bytes.Buffer
+	err = t.Execute(&text, weather)
+	if err != nil {
+		fmt.Errorf("error executing json template: %w", err)
+	}
 
 	// Construct the 'tooltip' field
 	tooltip := []string{}
 	if len(weather.HourlyForecast) > 0 {
+
+		// Create a new template and parse the template string
+		t, err := template.New("json-tooltip").Parse(config.ForecastTmpl)
+		if err != nil {
+			fmt.Errorf("error creating json template: %w", err)
+		}
+
 		for _, hour := range weather.HourlyForecast {
 			timeVal := time.Unix(hour.TimeEpoch, 0)
-				if timeVal.Before(nowFunc()) {
-					continue
-				}
+			if timeVal.Before(nowFunc()) {
+				continue
+			}
 
-				tooltip = append(tooltip, fmt.Sprintf(config.Outputs.JSON.ForecastFmt, timeVal.Format("15:04"), hour.Emoji, hour.TempC, hour.FeelslikeC))
+			// Create a buffer to store the executed template
+			var tooltipLine bytes.Buffer
+			err = t.Execute(&tooltipLine, hour)
+			if err != nil {
+				fmt.Errorf("error executing json template: %w", err)
+			}
 
-				if timeVal.After(nowFunc().Add(time.Hour * 23)) {
-					break
-				}
+			tooltip = append(tooltip, tooltipLine.String())
+
+			if timeVal.After(nowFunc().Add(time.Hour * 23)) {
+				break
+			}
 		}
 	}
 
@@ -73,7 +123,7 @@ func formatJSON(weather *Weather, config *Config, nowFunc func() time.Time) stri
 		Text    string `json:"text"`
 		Tooltip string `json:"tooltip"`
 	}{
-		Text:    text,
+		Text:    text.String(),
 		Tooltip: strings.Join(tooltip, "\r"),
 	}
 
