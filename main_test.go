@@ -83,7 +83,7 @@ func TestAppOutput(t *testing.T) {
 	configProvider := &MockConfigProvider{mockConfig: &Config{
 		APIKey:   "mock-key",
 		Location: "Brussels",
-		CurrentTmpl:  "{{.Current.Emoji}}  {{.Current.TempC}}°",
+		CurrentTmpl:  "{{.Emoji}}  {{.TempC}}°",
 		ForecastTmpl: "{{.Emoji}} {{.TempC}}° [{{.FeelslikeC}}°]",
 	}}
 

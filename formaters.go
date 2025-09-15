@@ -19,31 +19,19 @@ func formatTable(weather *Weather, config *Config, nowFunc func() time.Time) str
 	// Current section
 	t.AppendRow(table.Row{"Current:"})
 	t.AppendSeparator()
-	// Create a new template and parse the template string
-	currentTmpl, err := template.New("table-current").Parse(config.CurrentTmpl)
+	currentLine, err := renderTemplateToString("table-current", config.CurrentTmpl, weather.Current)
 	if err != nil {
-		fmt.Errorf("error creating table template: %w", err)
+		// Log the error, but don't stop execution for formatting errors
+		fmt.Printf("Error rendering current template: %v\n", err)
 	}
-
-	// Create a buffer to store the executed template
-	var currentLine bytes.Buffer
-	err = currentTmpl.Execute(&currentLine, weather)
-	if err != nil {
-		fmt.Errorf("error executing table template: %w", err)
-	}
-	t.AppendRow(table.Row{currentLine.String()})
+	t.AppendRow(table.Row{currentLine})
 
 	// Location section
-	locationTmpl, err := template.New("table-location").Parse(config.LocationTmpl)
+	locationLine, err := renderTemplateToString("table-location", config.LocationTmpl, weather.Location)
 	if err != nil {
-		fmt.Errorf("error creating table template: %w", err)
+		fmt.Printf("Error rendering location template: %v\n", err)
 	}
-	var locationLine bytes.Buffer
-	err = locationTmpl.Execute(&locationLine, weather)
-	if err != nil {
-		fmt.Errorf("error executing table template: %w", err)
-	}
-	t.AppendRow(table.Row{locationLine.String()})
+	t.AppendRow(table.Row{locationLine})
 
 	// Hourly Forecast section
 	t.AppendSeparator()
@@ -52,26 +40,17 @@ func formatTable(weather *Weather, config *Config, nowFunc func() time.Time) str
 
 	// Hourly forecast details
 	if len(weather.HourlyForecast) > 0 {
-		// Create a new template and parse the template string
-		hourlyTmpl, err := template.New("table-hourly").Parse(config.ForecastTmpl)
-		if err != nil {
-			fmt.Errorf("error creating table template: %w", err)
-		}
-
 		for _, hour := range weather.HourlyForecast {
 			timeVal := time.Unix(hour.TimeEpoch, 0)
 			if timeVal.Before(nowFunc()) {
 				continue
 			}
 
-			// Create a buffer to store the executed template
-			var hourlyLineBts bytes.Buffer
-			err = hourlyTmpl.Execute(&hourlyLineBts, hour)
+			hourlyLineContent, err := renderTemplateToString("table-hourly", config.ForecastTmpl, hour)
 			if err != nil {
-				fmt.Errorf("error executing table template: %w", err)
+				fmt.Printf("Error rendering hourly template: %v\n", err)
 			}
-
-			hourlyLine := fmt.Sprintf("%s: %s", timeVal.Format("15:04"), hourlyLineBts.String())
+			hourlyLine := fmt.Sprintf("%s : %s", timeVal.Format("15:04"), hourlyLineContent)
 			t.AppendRow(table.Row{hourlyLine})
 
 			//we need this to restrict the results to 24hours
@@ -86,44 +65,27 @@ func formatTable(weather *Weather, config *Config, nowFunc func() time.Time) str
 
 // formatJSON formats the weather data into a JSON string
 func formatJSON(weather *Weather, config *Config, nowFunc func() time.Time) string {
-
-	// Create a new template and parse the template string
-	t, err := template.New("json-text").Parse(config.CurrentTmpl)
+	text, err := renderTemplateToString("json-text", config.CurrentTmpl, weather.Current)
 	if err != nil {
-		fmt.Errorf("error creating json template: %w", err)
-	}
-
-	// Create a buffer to store the executed template
-	var text bytes.Buffer
-	err = t.Execute(&text, weather)
-	if err != nil {
-		fmt.Errorf("error executing json template: %w", err)
+		fmt.Printf("Error rendering json text template: %v\n", err)
+		text = "" // Fallback to empty string on error
 	}
 
 	// Construct the 'tooltip' field
 	tooltip := []string{}
 	if len(weather.HourlyForecast) > 0 {
-
-		// Create a new template and parse the template string
-		t, err := template.New("json-tooltip").Parse(config.ForecastTmpl)
-		if err != nil {
-			fmt.Errorf("error creating json template: %w", err)
-		}
-
 		for _, hour := range weather.HourlyForecast {
 			timeVal := time.Unix(hour.TimeEpoch, 0)
 			if timeVal.Before(nowFunc()) {
 				continue
 			}
 
-			// Create a buffer to store the executed template
-			var tooltipLineBts bytes.Buffer
-			err = t.Execute(&tooltipLineBts, hour)
+			tooltipLineContent, err := renderTemplateToString("json-tooltip", config.ForecastTmpl, hour)
 			if err != nil {
-				fmt.Errorf("error executing json template: %w", err)
+				fmt.Printf("Error rendering json tooltip template: %v\n", err)
+				tooltipLineContent = "" // Fallback to empty string on error
 			}
-
-	tooltipLine := fmt.Sprintf("%s: %s", timeVal.Format("15:04"), tooltipLineBts.String())
+			tooltipLine := fmt.Sprintf("%s: %s", timeVal.Format("15:04"), tooltipLineContent)
 			tooltip = append(tooltip, tooltipLine)
 
 			if timeVal.After(nowFunc().Add(time.Hour * 23)) {
@@ -137,15 +99,35 @@ func formatJSON(weather *Weather, config *Config, nowFunc func() time.Time) stri
 		Text    string `json:"text"`
 		Tooltip string `json:"tooltip"`
 	}{
-		Text:    text.String(),
+		Text:    text,
 		Tooltip: strings.Join(tooltip, "\r"),
 	}
 
 	// Marshal to JSON
 	jsonOutput, err := json.Marshal(outputStruct)
 	if err != nil {
-		fmt.Errorf("error marshalling JSON output: %w", err)
+		fmt.Printf("Error marshalling JSON output: %v\n", err)
+		return "{}" // Fallback to empty JSON object on error
 	}
 
 	return string(jsonOutput)
+}
+
+// renderTemplateToString parses and executes a template, returning the result as a string.
+func renderTemplateToString(
+	templateName string,
+	templateString string,
+	data interface{},
+) (string, error) {
+	tmpl, err := template.New(templateName).Parse(templateString)
+	if err != nil {
+		return "", fmt.Errorf("error creating template %s: %w", templateName, err)
+	}
+
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, data)
+	if err != nil {
+		return "", fmt.Errorf("error executing template %s: %w", templateName, err)
+	}
+	return buf.String(), nil
 }

@@ -57,10 +57,10 @@ type Config struct {
 // SetDefaults sets the default values for the configuration.
 func (c *Config) SetDefaults() {
 	if c.CurrentTmpl == "" {
-		c.CurrentTmpl = "{{.Current.Emoji}} {{printf \"%.1f\" .Current.TempC}}°"
+		c.CurrentTmpl = "{{.Emoji}} {{printf \"%.1f\" .TempC}}°"
 	}
 	if c.LocationTmpl == "" {
-		c.LocationTmpl = "{{.Location.Name}} - {{.Location.Country}}"
+		c.LocationTmpl = "{{.Name}} - {{.Country}}"
 	}
 	if c.ForecastTmpl == "" {
 		c.ForecastTmpl = "{{.Emoji}} {{printf \"%5.1f\" .TempC}}° [{{printf \"%5.1f\" .FeelslikeC}}°]"
