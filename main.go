@@ -69,7 +69,7 @@ func exitOnJSON(config *Config, err error ) {
 	}
 
 	if config.OutputType == "json" {
-		fmt.Printf("{\"text\":\" N/A ☢ \",\"tooltip\":\" error fetching weather: %s \"}", err)
+		fmt.Printf("{\"text\":\"N/A ☢\",\"tooltip\":\" error fetching weather: %s \"}", err)
 		os.Exit(0)
 	}
 }
