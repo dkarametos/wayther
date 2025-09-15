@@ -216,10 +216,14 @@ func (p *weatherapiProvider)toWeather(w *WeatherAPIResponse) *Weather {
 	}
 
 	return &Weather{
-		LocationName:    w.Location.Name,
-		LocationCountry: w.Location.Country,
-		CurrentEmoji:    w.Current.Condition.Emoji,
-		CurrentTempC:    w.Current.TempC,
+		Location: WeatherLocation{
+			Name:    w.Location.Name,
+			Country: w.Location.Country,
+		},
+		Current: WeatherCurrent{
+			Emoji: w.Current.Condition.Emoji,
+			TempC: w.Current.TempC,
+		},
 		HourlyForecast:  hourlyForecasts,
 	}
 }

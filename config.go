@@ -50,22 +50,21 @@ type Config struct {
 	Logger          bool    `json:"logger"`
 	OutputType      string  `json:"outputType,omitempty"`
 	CurrentTmpl     string  `json:"currentTmpl,omitempty"`
+	LocationTmpl    string  `json:"locationTmpl,omitempty"`
 	ForecastTmpl    string  `json:"forecastTmpl,omitempty"`
-	
-	
 }
 
 // SetDefaults sets the default values for the configuration.
 func (c *Config) SetDefaults() {
 	if c.CurrentTmpl == "" {
-		c.CurrentTmpl = "{{.CurrentEmoji}}  {{.CurrentTempC}}°"
+		c.CurrentTmpl = "{{.Current.Emoji}} {{printf \"%.1f\" .Current.TempC}}°"
+	}
+	if c.LocationTmpl == "" {
+		c.LocationTmpl = "{{.Location.Name}} - {{.Location.Country}}"
 	}
 	if c.ForecastTmpl == "" {
-		c.ForecastTmpl = "{{.Emoji}} {{.TempC}}° [{{.FeelslikeC}}°]"
+		c.ForecastTmpl = "{{.Emoji}} {{printf \"%5.1f\" .TempC}}° [{{printf \"%5.1f\" .FeelslikeC}}°]"
 	}
-	
-	
-
 	if c.OutputType == "" {
 		c.OutputType = "table"
 	}

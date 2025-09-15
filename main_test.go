@@ -55,10 +55,14 @@ func (m *MockWeatherProvider) toWeather(w *WeatherAPIResponse) *Weather {
 	}
 
 	return &Weather{
-		LocationName:    w.Location.Name,
-		LocationCountry: w.Location.Country,
-		CurrentEmoji:    w.Current.Condition.Emoji,
-		CurrentTempC:    w.Current.TempC,
+		Location: WeatherLocation{
+			Name:    w.Location.Name,
+			Country: w.Location.Country,
+		},
+		Current: WeatherCurrent{
+			Emoji: w.Current.Condition.Emoji,
+			TempC: w.Current.TempC,
+		},
 		HourlyForecast:  hourlyForecasts,
 	}
 }
@@ -79,7 +83,7 @@ func TestAppOutput(t *testing.T) {
 	configProvider := &MockConfigProvider{mockConfig: &Config{
 		APIKey:   "mock-key",
 		Location: "Brussels",
-		CurrentTmpl:  "{{.CurrentEmoji}}  {{.CurrentTempC}}°",
+		CurrentTmpl:  "{{.Current.Emoji}}  {{.Current.TempC}}°",
 		ForecastTmpl: "{{.Emoji}} {{.TempC}}° [{{.FeelslikeC}}°]",
 	}}
 
