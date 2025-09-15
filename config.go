@@ -52,6 +52,7 @@ type Config struct {
 	CurrentTmpl     string  `json:"currentTmpl,omitempty"`
 	LocationTmpl    string  `json:"locationTmpl,omitempty"`
 	ForecastTmpl    string  `json:"forecastTmpl,omitempty"`
+	ForecastHours   int     `json:"forecastHours,omitempty"`
 }
 
 // SetDefaults sets the default values for the configuration.
@@ -104,6 +105,7 @@ func (c *Config) MergeConfigs(customConfig *Config) {
 func (c *Config) ParseCommand(cmd *cobra.Command, args []string, isTerminal func(uintptr) bool) {
 
 	//put a switch here.. 
+	c.ForecastHours, _ = cmd.Flags().GetInt("forecast-hours")
 	c.OutputType, _ =cmd.Flags().GetString("output")	
 	if !isTerminal(os.Stdout.Fd()) {
 		c.OutputType = "json"

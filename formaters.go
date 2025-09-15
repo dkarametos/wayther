@@ -39,8 +39,12 @@ func formatTable(weather *Weather, config *Config, nowFunc func() time.Time) str
 	t.AppendSeparator()
 
 	// Hourly forecast details
-	if len(weather.HourlyForecast) > 0 {
+	if config.ForecastHours > 0 && len(weather.HourlyForecast) > 0 {
+		hoursCount := 0
 		for _, hour := range weather.HourlyForecast {
+			if hoursCount >= config.ForecastHours {
+				break
+			}
 			timeVal := time.Unix(hour.TimeEpoch, 0)
 			if timeVal.Before(nowFunc()) {
 				continue
@@ -52,6 +56,7 @@ func formatTable(weather *Weather, config *Config, nowFunc func() time.Time) str
 			}
 			hourlyLine := fmt.Sprintf("%s : %s", timeVal.Format("15:04"), hourlyLineContent)
 			t.AppendRow(table.Row{hourlyLine})
+			hoursCount++
 
 			//we need this to restrict the results to 24hours
 			if timeVal.After(nowFunc().Add(time.Hour * 23)) {
@@ -73,8 +78,12 @@ func formatJSON(weather *Weather, config *Config, nowFunc func() time.Time) stri
 
 	// Construct the 'tooltip' field
 	tooltip := []string{}
-	if len(weather.HourlyForecast) > 0 {
+	if config.ForecastHours > 0 && len(weather.HourlyForecast) > 0 {
+		hoursCount := 0
 		for _, hour := range weather.HourlyForecast {
+			if hoursCount >= config.ForecastHours {
+				break
+			}
 			timeVal := time.Unix(hour.TimeEpoch, 0)
 			if timeVal.Before(nowFunc()) {
 				continue
@@ -87,6 +96,8 @@ func formatJSON(weather *Weather, config *Config, nowFunc func() time.Time) stri
 			}
 			tooltipLine := fmt.Sprintf("%s: %s", timeVal.Format("15:04"), tooltipLineContent)
 			tooltip = append(tooltip, tooltipLine)
+			hoursCount++
+
 
 			if timeVal.After(nowFunc().Add(time.Hour * 23)) {
 				break

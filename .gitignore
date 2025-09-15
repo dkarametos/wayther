@@ -3,4 +3,5 @@ samples/config.json
 ROADMAP.md
 coverage.out
 coverage.sh
+coverage.html
 test.json
