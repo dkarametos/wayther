@@ -40,6 +40,14 @@ func (cp *ConfigPath) isCustom() bool {
 	return (cp.Custom != "")
 }
 
+// GetPath returns the custom path if it's set, otherwise it returns the default path.
+func (cp *ConfigPath) GetPath() string {
+	if cp.isCustom() {
+		return cp.Custom
+	}
+	return cp.DefConf
+}
+
 // Config holds the application configuration.
 type Config struct {
 	APIKey          string  `json:"apiKey,omitempty"`

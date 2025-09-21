@@ -22,9 +22,20 @@ Configuration:
   If no configuration file is found, you will be prompted to create one interactively.
   The 'logger' key in the config (boolean, defaults to false) enables syslog output if true.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		weatherProvider := &weatherapiProvider{}
-		configProvider  := &FileConfigProvider{}
-		return runApp(cmd, args, weatherProvider, configProvider, isatty.IsTerminal, time.Now)
+		configPath, err := NewConfigPath()
+		if err != nil {
+			return err
+		}
+		configPath.Custom, _ = cmd.Flags().GetString("config")
+
+		cache, err := NewCache(configPath.GetPath())
+		if err != nil {
+			return err
+		}
+
+		weatherProvider := &weatherapiProvider{cache: cache}
+		configProvider := &FileConfigProvider{}
+		return runApp(cmd, args, configPath, weatherProvider, configProvider, isatty.IsTerminal, time.Now)
 	},
 }
 
@@ -34,10 +45,7 @@ func init() {
 	rootCmd.Flags().IntP("forecast-hours", "n", 23, "Number of forecast hours to display (1-23). 0 means no hourly forecast.")
 }
 
-func runApp(cmd *cobra.Command, args []string, weatherProvider WeatherProvider, configProvider ConfigProvider, isTerminal func(uintptr) bool, nowFunc func() time.Time) error {
-
-	configPath, err := NewConfigPath()
-	configPath.Custom, _ = cmd.Flags().GetString("config")
+func runApp(cmd *cobra.Command, args []string, configPath ConfigPath, weatherProvider WeatherProvider, configProvider ConfigProvider, isTerminal func(uintptr) bool, nowFunc func() time.Time) error {
 
 	config, err := configProvider.LoadConfig(configPath)
 	if err != nil {

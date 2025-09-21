@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 var weatherAPIURL = "https://api.weatherapi.com/v1/forecast.json"
@@ -159,13 +160,20 @@ type Hour struct {
 }
 
 // weatherapiProvider is the real implementation of WeatherProvider that uses the weather API.
-type weatherapiProvider struct { }
+type weatherapiProvider struct {
+	cache *Cache
+}
 
 // GetWeather fetches weather forecast data from the WeatherAPI for a given location.
 // It takes the location (e.g., "London") and an API key as input.
 // It returns a pointer to a WeatherAPIResponse struct containing the parsed data,
 // or an error if the request fails or the response cannot be decoded.
 func (p *weatherapiProvider) GetWeather(c *Config) (*WeatherAPIResponse, error) {
+	// Check cache first
+	if entry, found := p.cache.Get(c.Location); found && !entry.IsStale(time.Hour) {
+		return entry.Weather, nil
+	}
+
 	url := fmt.Sprintf("%s?key=%s&q=%s&days=2&aqi=no&alerts=no", weatherAPIURL, c.APIKey, c.Location)
 
 	resp, err := http.Get(url)
@@ -194,6 +202,12 @@ func (p *weatherapiProvider) GetWeather(c *Config) (*WeatherAPIResponse, error) 
 		for j := range weatherResp.Forecast.Forecastday[i].Hour {
 			weatherResp.Forecast.Forecastday[i].Hour[j].Condition.Emoji = getEmojiForWeatherCode(weatherResp.Forecast.Forecastday[i].Hour[j].Condition.Code)
 		}
+	}
+
+	// Save to cache
+	if err := p.cache.Set(c.Location, &weatherResp); err != nil {
+		// Log the error, but don't block the user
+		fmt.Printf("Failed to save to cache: %v\n", err)
 	}
 
 	return &weatherResp, nil

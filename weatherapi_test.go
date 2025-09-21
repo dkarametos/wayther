@@ -4,7 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestWeatherProvider_GetWeather(t *testing.T) {
@@ -44,7 +48,18 @@ func TestWeatherProvider_GetWeather(t *testing.T) {
 	weatherAPIURL = server.URL + "/v1/forecast.json"
 	defer func() { weatherAPIURL = originalURL }()
 
-	provider := &weatherapiProvider{}
+	tempDir, err := os.MkdirTemp("", "cache-test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	cache, err := NewCache(filepath.Join(tempDir, "cache.json"))
+	if err != nil {
+		t.Fatalf("Failed to create cache: %v", err)
+	}
+
+	provider := &weatherapiProvider{cache: cache}
 	config := &Config{
 		Location: "London",
 		APIKey:   "test_api_key",
@@ -55,19 +70,10 @@ func TestWeatherProvider_GetWeather(t *testing.T) {
 	}
 
 	// Assertions
-	if weather.Location.Name != "London" {
-		t.Errorf("Expected location name 'London', got: %s", weather.Location.Name)
-	}
-	if weather.Current.TempC != 10.0 {
-		t.Errorf("Expected temperature 10.0, got: %.1f", weather.Current.TempC)
-	}
-	if weather.Current.Humidity != 70 {
-		t.Errorf("Expected humidity 70, got: %d", weather.Current.Humidity)
-	}
-	if weather.Current.Condition.Text != "Partly cloudy" {
-		t.Errorf("Expected condition 'Partly cloudy', got: %s", weather.Current.Condition.Text)
-	}
-	if weather.Current.Condition.Code != 1003 {
-		t.Errorf("Expected condition code 1003, got: %d", weather.Current.Condition.Code)
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, "London", weather.Location.Name)
+	assert.Equal(t, 10.0, weather.Current.TempC)
+	assert.Equal(t, 70, weather.Current.Humidity)
+	assert.Equal(t, "Partly cloudy", weather.Current.Condition.Text)
+	assert.Equal(t, 1003, weather.Current.Condition.Code)
 }
