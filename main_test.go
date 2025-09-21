@@ -118,6 +118,7 @@ func TestAppOutput(t *testing.T) {
 	})
 
 	t.Run("Table Output", func(t *testing.T) {
+		configProvider.mockConfig.ForecastHours = 4
 		// Redirect stdout
 		oldStdout := os.Stdout
 		r, w, _ := os.Pipe()
@@ -125,6 +126,7 @@ func TestAppOutput(t *testing.T) {
 
 		configProvider.mockConfig.OutputType = "table"
 		cmd := &cobra.Command{}
+		cmd.Flags().Int("forecast-hours", 4, "")
 		err := runApp(cmd, []string{"Brussels"}, weatherProvider, configProvider, func(fd uintptr) bool { return true }, mockNowFunc)
 		assert.NoError(t, err)
 

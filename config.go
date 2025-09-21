@@ -40,9 +40,6 @@ func (cp *ConfigPath) isCustom() bool {
 	return (cp.Custom != "")
 }
 
-
-
-
 // Config holds the application configuration.
 type Config struct {
 	APIKey          string  `json:"apiKey,omitempty"`
@@ -70,7 +67,6 @@ func (c *Config) SetDefaults() {
 		c.OutputType = "table"
 	}
 }
-
 
 // MergeConfigs merges the custom configuration into the current configuration.
 func (c *Config) MergeConfigs(customConfig *Config) {
@@ -126,9 +122,6 @@ func (c *Config) ParseCommand(cmd *cobra.Command, args []string, isTerminal func
 		}
 	}
 }
-
-
-
 
 // LoadOrCreateConfig loads a configuration from a given path if it exists,
 // otherwise it creates a new one.
@@ -213,7 +206,6 @@ func CreateConfig(path string, isDefault bool) (*Config, error) {
 	fmt.Printf("Created configuration file: %s\n\n", path)
 	return config, nil
 }
-
 
 // GetUserInput prompts the user for input with a given prompt.
 // It can handle secret input (like passwords) and default values.

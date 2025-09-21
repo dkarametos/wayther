@@ -34,12 +34,12 @@ func formatTable(weather *Weather, config *Config, nowFunc func() time.Time) str
 	t.AppendRow(table.Row{locationLine})
 
 	// Hourly Forecast section
-	t.AppendSeparator()
-	t.AppendRow(table.Row{"Hourly Forecast:"})
-	t.AppendSeparator()
+	if config.ForecastHours > 0 {
+		t.AppendSeparator()
+		t.AppendRow(table.Row{"Hourly Forecast:"})
+		t.AppendSeparator()
 
-	// Hourly forecast details
-	if config.ForecastHours > 0 && len(weather.HourlyForecast) > 0 {
+		// Hourly forecast details
 		hoursCount := 0
 		for _, hour := range weather.HourlyForecast {
 			if hoursCount >= config.ForecastHours {
@@ -68,6 +68,7 @@ func formatTable(weather *Weather, config *Config, nowFunc func() time.Time) str
 	return t.Render()
 }
 
+
 // formatJSON formats the weather data into a JSON string
 func formatJSON(weather *Weather, config *Config, nowFunc func() time.Time) string {
 	text, err := renderTemplateToString("json-text", config.CurrentTmpl, weather.Current)
@@ -78,7 +79,7 @@ func formatJSON(weather *Weather, config *Config, nowFunc func() time.Time) stri
 
 	// Construct the 'tooltip' field
 	tooltip := []string{}
-	if config.ForecastHours > 0 && len(weather.HourlyForecast) > 0 {
+	if config.ForecastHours > 0 {
 		hoursCount := 0
 		for _, hour := range weather.HourlyForecast {
 			if hoursCount >= config.ForecastHours {
