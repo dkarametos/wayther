@@ -27,7 +27,7 @@ func formatTable(weather *Weather, config *Config, nowFunc func() time.Time) str
 	t.AppendRow(table.Row{currentLine})
 
 	// Location section
-	locationLine, err := renderTemplateToString("table-location", config.LocationTmpl, weather.Location)
+	locationLine, err := renderTemplateToString("table-location", config.LocationTmpl, weather.Current)
 	if err != nil {
 		fmt.Printf("Error rendering location template: %v\n", err)
 	}
@@ -95,7 +95,7 @@ func formatJSON(weather *Weather, config *Config, nowFunc func() time.Time) stri
 				fmt.Printf("Error rendering json tooltip template: %v\n", err)
 				tooltipLineContent = "" // Fallback to empty string on error
 			}
-			tooltipLine := fmt.Sprintf("%s: %s", timeVal.Format("15:04"), tooltipLineContent)
+			tooltipLine := fmt.Sprintf(" %s: %s ", timeVal.Format("15:04"), tooltipLineContent)
 			tooltip = append(tooltip, tooltipLine)
 			hoursCount++
 

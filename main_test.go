@@ -55,15 +55,13 @@ func (m *MockWeatherProvider) toWeather(w *WeatherAPIResponse) *Weather {
 	}
 
 	return &Weather{
-		Location: WeatherLocation{
-			Name:    w.Location.Name,
-			Country: w.Location.Country,
-		},
 		Current: WeatherCurrent{
-			Emoji: w.Current.Condition.Emoji,
-			TempC: w.Current.TempC,
+			Location: w.Location.Name,
+			Country:  w.Location.Country,
+			Emoji:    w.Current.Condition.Emoji,
+			TempC:    w.Current.TempC,
 		},
-		HourlyForecast:  hourlyForecasts,
+		HourlyForecast: hourlyForecasts,
 	}
 }
 
@@ -100,7 +98,7 @@ func TestAppOutput(t *testing.T) {
 
 		configProvider.mockConfig.OutputType = "json"
 		cmd := &cobra.Command{}
-		err := runApp(cmd, []string{"Brussels"}, ConfigPath{}, weatherProvider, configProvider, func(fd uintptr) bool { return false }, mockNowFunc)
+		err := runApp(cmd, []string{"Brussels"}, ConfigPath{}, weatherProvider, configProvider, false, mockNowFunc)
 		assert.NoError(t, err)
 
 		// Restore stdout and read the captured output
@@ -127,7 +125,7 @@ func TestAppOutput(t *testing.T) {
 		configProvider.mockConfig.OutputType = "table"
 		cmd := &cobra.Command{}
 		cmd.Flags().Int("forecast-hours", 4, "")
-		err := runApp(cmd, []string{"Brussels"}, ConfigPath{}, weatherProvider, configProvider, func(fd uintptr) bool { return true }, mockNowFunc)
+		err := runApp(cmd, []string{"Brussels"}, ConfigPath{}, weatherProvider, configProvider, true, mockNowFunc)
 		assert.NoError(t, err)
 
 		// Restore stdout and read the captured output
@@ -151,12 +149,12 @@ func TestExecutionError(t *testing.T) {
 	configProvider := &MockConfigProvider{mockConfig: &Config{}}
 
 	cmd := &cobra.Command{}
-	err := runApp(cmd, []string{"some-location"}, ConfigPath{}, weatherProvider, configProvider, func(fd uintptr) bool { return true }, time.Now)
+	err := runApp(cmd, []string{"some-location"}, ConfigPath{}, weatherProvider, configProvider, true, time.Now)
 	assert.Error(t, err, "Expected an error to be returned from runApp()")
 	assert.EqualError(t, err, "mock weather error", "The error message should be the one from the mock")
 
 	configProvider = &MockConfigProvider{err: errors.New("mock config load error")}
-	err = runApp(cmd, []string{"some-location"}, ConfigPath{}, weatherProvider, configProvider, func(fd uintptr) bool { return true }, time.Now)
+	err = runApp(cmd, []string{"some-location"}, ConfigPath{}, weatherProvider, configProvider, true, time.Now)
 	assert.Error(t, err, "Expected an error to be returned from runApp()")
 	assert.EqualError(t, err, "mock config load error", "The error message should be the one from the mock")
 }

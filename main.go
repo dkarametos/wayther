@@ -35,18 +35,30 @@ Configuration:
 
 		weatherProvider := &weatherapiProvider{cache: cache}
 		configProvider := &FileConfigProvider{}
-		return runApp(cmd, args, configPath, weatherProvider, configProvider, isatty.IsTerminal, time.Now)
+		isTerminal := isatty.IsTerminal(os.Stdout.Fd())
+		return runApp(cmd, args, configPath, weatherProvider, configProvider, isTerminal, time.Now)
 	},
 }
 
 func init() {
-	rootCmd.Flags().StringP("config", "c", "", "Provide a custom config")
-	rootCmd.Flags().StringP("output", "o", "table", "Output format (json, table)")
-	rootCmd.Flags().IntP("forecast-hours", "n", 23, "Number of forecast hours to display (1-23). 0 means no hourly forecast.")
-	rootCmd.Flags().BoolP("no-cache", "f", false, "Force a refresh of the data from the API")
+	rootCmd.Flags().StringP("config",         "c", "",      "Provide a custom config")
+	rootCmd.Flags().StringP("output",         "o", "table", "Output format (json, table)")
+	rootCmd.Flags().IntP(   "forecast-hours", "n", 23,      "Number of forecast hours to display (1-23). 0 means no hourly forecast.")
+	rootCmd.Flags().BoolP(  "no-cache",       "f", false,   "Force a refresh of the data from the API")
+	rootCmd.Flags().BoolP(  "clean-cache",    "C", false,   "Clean cache entries older than 1h")
 }
 
-func runApp(cmd *cobra.Command, args []string, configPath ConfigPath, weatherProvider WeatherProvider, configProvider ConfigProvider, isTerminal func(uintptr) bool, nowFunc func() time.Time) error {
+func runApp(cmd *cobra.Command, args []string, configPath ConfigPath, weatherProvider WeatherProvider, configProvider ConfigProvider, isTerminal bool, nowFunc func() time.Time) error {
+
+	cleanCache, _ := cmd.Flags().GetBool("clean-cache")
+	if cleanCache {
+		cache, err := NewCache(configPath.GetPath())
+		if err != nil {
+			return err
+		}
+		cache.Clean(time.Hour) // Clean entries older than 1 hour
+		fmt.Println("Cache cleaned.")
+	}
 
 	config, err := configProvider.LoadConfig(configPath)
 	if err != nil {

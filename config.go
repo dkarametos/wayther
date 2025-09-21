@@ -67,7 +67,7 @@ func (c *Config) SetDefaults() {
 		c.CurrentTmpl = "{{.Emoji}} {{printf \"%.1f\" .TempC}}°"
 	}
 	if c.LocationTmpl == "" {
-		c.LocationTmpl = "{{.Name}} - {{.Country}}"
+		c.LocationTmpl = "{{.Location}} - {{.Country}}"
 	}
 	if c.ForecastTmpl == "" {
 		c.ForecastTmpl = "{{.Emoji}} {{printf \"%5.1f\" .TempC}}° [{{printf \"%5.1f\" .FeelslikeC}}°]"
@@ -107,13 +107,13 @@ func (c *Config) MergeConfigs(customConfig *Config) {
 // It determines the output type (JSON or table) and location from the command line.
 // If the output is not a terminal, it defaults to JSON.
 // It also configures a syslog writer if logging is enabled in the configuration.
-func (c *Config) ParseCommand(cmd *cobra.Command, args []string, isTerminal func(uintptr) bool) {
+func (c *Config) ParseCommand(cmd *cobra.Command, args []string, isTerminal bool) {
 
 	//put a switch here.. 
 	c.ForecastHours, _ = cmd.Flags().GetInt("forecast-hours")
 	c.OutputType, _ =cmd.Flags().GetString("output")
 	c.NoCache, _ = cmd.Flags().GetBool("no-cache")
-	if !isTerminal(os.Stdout.Fd()) {
+	if !isTerminal {
 		c.OutputType = "json"
 	}
 

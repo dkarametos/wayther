@@ -7,20 +7,17 @@ type WeatherProvider interface {
 }
 
 // Weather holds the simplified weather data for formatting.
-type WeatherLocation struct {
-	Name    string
-	Country string
-}
 
 // WeatherCurrent holds simplified current weather conditions.
 type WeatherCurrent struct {
-	Emoji string
-	TempC float64
+	Location string
+	Country  string
+	Emoji    string
+	TempC    float64
 }
 
 // Weather holds the simplified weather data for formatting.
 type Weather struct {
-	Location       WeatherLocation
 	Current        WeatherCurrent
 	HourlyForecast []HourlyForecast
 }

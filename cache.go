@@ -58,6 +58,7 @@ func (c *Cache) Get(location string) (*CacheEntry, bool) {
 
 // Set adds or updates a cache entry.
 func (c *Cache) Set(location string, weather *WeatherAPIResponse) error {
+	c.Clean(time.Hour)
 	c.Entries[location] = CacheEntry{
 		Timestamp: time.Now(),
 		Weather:   weather,
@@ -68,4 +69,13 @@ func (c *Cache) Set(location string, weather *WeatherAPIResponse) error {
 // IsStale checks if the cache entry is older than the given duration.
 func (e *CacheEntry) IsStale(duration time.Duration) bool {
 	return time.Since(e.Timestamp) > duration
+}
+
+// Clean removes stale entries from the cache.
+func (c *Cache) Clean(duration time.Duration) {
+	for location, entry := range c.Entries {
+		if entry.IsStale(duration) {
+			delete(c.Entries, location)
+		}
+	}
 }
