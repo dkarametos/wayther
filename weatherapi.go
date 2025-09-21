@@ -170,8 +170,10 @@ type weatherapiProvider struct {
 // or an error if the request fails or the response cannot be decoded.
 func (p *weatherapiProvider) GetWeather(c *Config) (*WeatherAPIResponse, error) {
 	// Check cache first
-	if entry, found := p.cache.Get(c.Location); found && !entry.IsStale(time.Hour) {
-		return entry.Weather, nil
+	if !c.NoCache {
+		if entry, found := p.cache.Get(c.Location); found && !entry.IsStale(time.Hour) {
+			return entry.Weather, nil
+		}
 	}
 
 	url := fmt.Sprintf("%s?key=%s&q=%s&days=2&aqi=no&alerts=no", weatherAPIURL, c.APIKey, c.Location)

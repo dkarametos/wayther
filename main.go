@@ -43,6 +43,7 @@ func init() {
 	rootCmd.Flags().StringP("config", "c", "", "Provide a custom config")
 	rootCmd.Flags().StringP("output", "o", "table", "Output format (json, table)")
 	rootCmd.Flags().IntP("forecast-hours", "n", 23, "Number of forecast hours to display (1-23). 0 means no hourly forecast.")
+	rootCmd.Flags().BoolP("no-cache", "f", false, "Force a refresh of the data from the API")
 }
 
 func runApp(cmd *cobra.Command, args []string, configPath ConfigPath, weatherProvider WeatherProvider, configProvider ConfigProvider, isTerminal func(uintptr) bool, nowFunc func() time.Time) error {

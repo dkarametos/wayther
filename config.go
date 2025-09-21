@@ -58,6 +58,7 @@ type Config struct {
 	LocationTmpl    string  `json:"locationTmpl,omitempty"`
 	ForecastTmpl    string  `json:"forecastTmpl,omitempty"`
 	ForecastHours   int     `json:"forecastHours,omitempty"`
+	NoCache         bool    `json:"noCache,omitempty"`
 }
 
 // SetDefaults sets the default values for the configuration.
@@ -110,7 +111,8 @@ func (c *Config) ParseCommand(cmd *cobra.Command, args []string, isTerminal func
 
 	//put a switch here.. 
 	c.ForecastHours, _ = cmd.Flags().GetInt("forecast-hours")
-	c.OutputType, _ =cmd.Flags().GetString("output")	
+	c.OutputType, _ =cmd.Flags().GetString("output")
+	c.NoCache, _ = cmd.Flags().GetBool("no-cache")
 	if !isTerminal(os.Stdout.Fd()) {
 		c.OutputType = "json"
 	}
