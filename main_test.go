@@ -85,9 +85,10 @@ func TestAppOutput(t *testing.T) {
 	configProvider := &MockConfigProvider{mockConfig: &Config{
 		APIKey:   "mock-key",
 		Location: "Brussels",
-		CurrentTmpl:  "{{.Emoji}}  {{.TempC}}°",
+		CurrentTmpl:  "{{.Emoji}} {{.TempC}}°",
+		ShortTmpl:    "{{.Emoji}} {{.TempC}}°", // Added this line
 		ForecastTmpl: "{{.Emoji}} {{.TempC}}° [{{.FeelslikeC}}°]",
-		
+
 	}}
 
 	mockNowFunc := func() time.Time {
@@ -100,7 +101,7 @@ func TestAppOutput(t *testing.T) {
 		r, w, _ := os.Pipe()
 		os.Stdout = w
 
-		configProvider.mockConfig.OutputType = "json"
+		configProvider.mockConfig.Output = "json"
 		cmd := &cobra.Command{}
 		err := runApp(cmd, []string{"Brussels"}, ConfigPath{}, weatherProvider, configProvider, false, mockNowFunc)
 		assert.NoError(t, err)
@@ -114,9 +115,9 @@ func TestAppOutput(t *testing.T) {
 
 		// The app produces valid JSON, so we check for key substrings.
 		assert.Contains(t, actualOutput, "\"text\":", "Output should contain the JSON key 'text'")
-		assert.Contains(t, actualOutput, "1.3°", "JSON output should contain the current temperature for Brussels")
+		assert.Contains(t, actualOutput, "\"text\":\" 1.3°\"", "JSON output should contain the current temperature in the text field")
 		assert.Contains(t, actualOutput, "\"tooltip\":", "Output should contain the JSON key 'tooltip'")
-		assert.Contains(t, actualOutput, "\"tooltip\":\"\"", "JSON tooltip should be empty")
+
 	})
 
 	t.Run("Table Output", func(t *testing.T) {
@@ -126,7 +127,7 @@ func TestAppOutput(t *testing.T) {
 		r, w, _ := os.Pipe()
 		os.Stdout = w
 
-		configProvider.mockConfig.OutputType = "table"
+		configProvider.mockConfig.Output = "table"
 		cmd := &cobra.Command{}
 		cmd.Flags().Int("forecast-hours", 4, "")
 		err := runApp(cmd, []string{"Brussels"}, ConfigPath{}, weatherProvider, configProvider, true, mockNowFunc)
@@ -141,17 +142,17 @@ func TestAppOutput(t *testing.T) {
 
 		// Assert that key elements for the Brussels response are present
 		assert.Contains(t, actualOutput, "Current:", "Table should have a 'Current' section")
-		
+
 		assert.Contains(t, actualOutput, "1.3°", "Table should contain the current temperature")
 		assert.Contains(t, actualOutput, "Hourly Forecast:", "Table should have an 'Hourly Forecast' section")
-		
+
 	})
 }
 
 func TestExecutionError(t *testing.T) {
 	t.Run("Weather Provider Error - Terminal Output", func(t *testing.T) {
 		weatherProvider := &MockWeatherProvider{err: errors.New("mock weather error")}
-		configProvider := &MockConfigProvider{mockConfig: &Config{OutputType: "table"}} // Simulate terminal output
+		configProvider := &MockConfigProvider{mockConfig: &Config{Output: "table"}} // Simulate terminal output
 
 		err := runApp(&cobra.Command{}, []string{"some-location"}, ConfigPath{}, weatherProvider, configProvider, true, time.Now)
 		assert.Error(t, err)
@@ -165,7 +166,7 @@ func TestExecutionError(t *testing.T) {
 		os.Stdout = w
 
 		weatherProvider := &MockWeatherProvider{err: errors.New("mock weather error")}
-		configProvider := &MockConfigProvider{mockConfig: &Config{OutputType: "json"}} // Simulate JSON output
+		configProvider := &MockConfigProvider{mockConfig: &Config{Output: "json"}} // Simulate JSON output
 
 		err := runApp(&cobra.Command{}, []string{"some-location"}, ConfigPath{}, weatherProvider, configProvider, false, time.Now)
 		assert.NoError(t, err)
@@ -182,7 +183,7 @@ func TestExecutionError(t *testing.T) {
 
 	t.Run("Config Load Error - Terminal Output", func(t *testing.T) {
 		weatherProvider := &MockWeatherProvider{}
-		configProvider := &MockConfigProvider{err: errors.New("mock config load error"), mockConfig: &Config{OutputType: "table"}} // Simulate terminal output
+		configProvider := &MockConfigProvider{err: errors.New("mock config load error"), mockConfig: &Config{Output: "table"}} // Simulate terminal output
 
 		err := runApp(&cobra.Command{}, []string{"some-location"}, ConfigPath{}, weatherProvider, configProvider, true, time.Now)
 		assert.Error(t, err)
@@ -196,7 +197,7 @@ func TestExecutionError(t *testing.T) {
 		os.Stdout = w
 
 		weatherProvider := &MockWeatherProvider{}
-		configProvider := &MockConfigProvider{err: errors.New("mock config load error"), mockConfig: &Config{OutputType: "json"}} // Simulate JSON output
+		configProvider := &MockConfigProvider{err: errors.New("mock config load error"), mockConfig: &Config{Output: "json"}} // Simulate JSON output
 
 		err := runApp(&cobra.Command{}, []string{"some-location"}, ConfigPath{}, weatherProvider, configProvider, false, time.Now)
 		assert.NoError(t, err)

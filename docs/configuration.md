@@ -18,10 +18,10 @@ Additionally, the configuration file now supports an optional `logger` key (bool
   "apiKey": "XXXXXX",
   "location": "auto:ip",
   "logger": false,
-  "outputType": "table",
-  "currentTmpl": "{{.Emoji}} {{printf \"%.1f\" .TempC}}°",
-  "locationTmpl": "{{.Location}} - {{.Country}}",
-  "forecastTmpl": "{{.Emoji}} {{printf \"%5.1f\" .TempC}}° [{{printf \"%5.1f\" .FeelslikeC}}°]",
+  "output": "table",
+  "short_template": "{{.Emoji}} {{printf \"%.1f\" .TempC}}°",
+  "current_template": "{{.Location}} - {{.Country}}",
+  "forecast_template": "{{.Emoji}} {{printf \"%5.1f\" .TempC}}° [{{printf \"%5.1f\" .FeelslikeC}}°]",
   "forecastHours": 23,
   "noCache": false
 }
@@ -32,9 +32,9 @@ Additionally, the configuration file now supports an optional `logger` key (bool
 *   `apiKey`: Your weatherapi.com API key.
 *   `location`: The default location to get the weather for. Can be a city name, a zip code, or `auto:ip` to use the IP address of the machine.
 *   `logger`: If set to `true`, the application will output logs to syslog.
-*   `outputType`: The default output format. Can be `table` or `json`.
-*   `currentTmpl`: The Go template for the current weather.
-*   `locationTmpl`: The Go template for the location.
-*   `forecastTmpl`: The Go template for the hourly forecast.
+*   `output`: The default output format. Can be `table` or `json`.
+*   `short_template`: The Go template used to format the `text` field when `output` is set to `json`.
+*   `current_template`: The Go template for the location.
+*   `forecast_template`: The Go template for the hourly forecast.
 *   `forecastHours`: The number of forecast hours to display.
 *   `noCache`: If set to `true`, the application will not use the cache.
