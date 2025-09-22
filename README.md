@@ -22,4 +22,5 @@ The name "Wayther" is a portmanteau of "[waybar](https://github.com/Alexays/wayb
 *   [Usage](docs/usage.md)
 *   [Configuration](docs/configuration.md)
 *   [Testing](docs/testing.md)
+*   [Templates](docs/templates.md)
 *   [License](docs/license.md)
