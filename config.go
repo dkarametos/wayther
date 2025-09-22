@@ -50,30 +50,30 @@ func (cp *ConfigPath) GetPath() string {
 
 // Config holds the application configuration.
 type Config struct {
-	APIKey          string  `json:"apiKey,omitempty"`
-	Location        string  `json:"location"`
-	Logger          bool    `json:"logger"`
-	OutputType      string  `json:"outputType,omitempty"`
-	CurrentTmpl     string  `json:"currentTmpl,omitempty"`
-	LocationTmpl    string  `json:"locationTmpl,omitempty"`
-	ForecastTmpl    string  `json:"forecastTmpl,omitempty"`
-	ForecastHours   int     `json:"forecastHours,omitempty"`
-	NoCache         bool    `json:"noCache,omitempty"`
+	APIKey         string  `json:"apiKey,omitempty"`
+	Location       string  `json:"location"`
+	Logger         bool    `json:"logger"`
+	Output         string  `json:"output,omitempty"`
+	ShortTmpl      string  `json:"short_template,omitempty"`
+	CurrentTmpl    string  `json:"current_template,omitempty"`
+	ForecastTmpl   string  `json:"forecast_template,omitempty"`
+	ForecastHours  int     `json:"forecastHours,omitempty"`
+	NoCache        bool    `json:"noCache,omitempty"`
 }
 
 // SetDefaults sets the default values for the configuration.
 func (c *Config) SetDefaults() {
-	if c.CurrentTmpl == "" {
-		c.CurrentTmpl = "{{printf \"%.1f\" .TempC}}° {{.Emoji}}"
+	if c.ShortTmpl == "" {
+		c.ShortTmpl = "{{printf \"%.1f\" .TempC}}° {{.Emoji}}"
 	}
-	if c.LocationTmpl == "" {
-		c.LocationTmpl = "{{.Location}} - {{.Country}}"
+	if c.CurrentTmpl == "" {
+		c.CurrentTmpl = "{{.Emoji}} {{printf \"%.1f\" .TempC}}°\n{{.Location}} - {{.Country}}"
 	}
 	if c.ForecastTmpl == "" {
 		c.ForecastTmpl = "{{.Emoji}} {{printf \"%5.1f\" .TempC}}° [{{printf \"%5.1f\" .FeelslikeC}}°]"
 	}
-	if c.OutputType == "" {
-		c.OutputType = "table"
+	if c.Output == "" {
+		c.Output = "table"
 	}
 }
 
@@ -89,6 +89,9 @@ func (c *Config) MergeConfigs(customConfig *Config) {
 
 	c.Logger = customConfig.Logger
 
+	if customConfig.ShortTmpl != "" {
+		c.ShortTmpl = customConfig.ShortTmpl
+	}
 	if customConfig.CurrentTmpl != "" {
 		c.CurrentTmpl = customConfig.CurrentTmpl
 	}
@@ -98,8 +101,8 @@ func (c *Config) MergeConfigs(customConfig *Config) {
 	
 	
 
-	if customConfig.OutputType != "" {
-		c.OutputType = customConfig.OutputType
+	if customConfig.Output != "" {
+		c.Output = customConfig.Output
 	}
 }
 
@@ -111,10 +114,10 @@ func (c *Config) ParseCommand(cmd *cobra.Command, args []string, isTerminal bool
 
 	//put a switch here.. 
 	c.ForecastHours, _ = cmd.Flags().GetInt("forecast-hours")
-	c.OutputType, _ =cmd.Flags().GetString("output")
+	c.Output, _ =cmd.Flags().GetString("output")
 	c.NoCache, _ = cmd.Flags().GetBool("no-cache")
 	if !isTerminal {
-		c.OutputType = "json"
+		c.Output = "json"
 	}
 
 	if len(args) > 0 {

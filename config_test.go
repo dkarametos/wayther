@@ -78,7 +78,7 @@ func TestLoadConfig_DefaultConfigExists(t *testing.T) {
 func TestLoadConfig_CustomConfigOverridesDefault(t *testing.T) {
 	tempDir := t.TempDir()
 	defaultConfig := &Config{APIKey: "default_key", Location: "DefaultCity", Logger: false}
-	customConfig := &Config{APIKey: "custom_key", Location: "CustomCity", Logger: true, OutputType: "json", CurrentTmpl: "custom_json_template", ForecastTmpl: "custom_json_forecast"}
+	customConfig := &Config{APIKey: "custom_key", Location: "CustomCity", Logger: true, Output: "json", ShortTmpl: "custom_json_template", ForecastTmpl: "custom_json_forecast"}
 
 	defaultConfigPath := createTempConfigFile(t, tempDir, "wayther/config.json", defaultConfig)
 	customConfigPath := createTempConfigFile(t, tempDir, "custom/config.json", customConfig)
@@ -161,13 +161,13 @@ func TestSetDefaults(t *testing.T) {
 	config := &Config{}
 	config.SetDefaults()
 
-	if config.OutputType != "table" {
-		t.Errorf("Expected OutputType to be 'table', got '%s'", config.OutputType)
+	if config.Output != "table" {
+		t.Errorf("Expected Output to be 'table', got '%s'", config.Output)
 	}
 
 	// Verify JSON defaults
-	if config.CurrentTmpl == "" {
-		t.Errorf("Expected CurrentTmpl to have a default value")
+	if config.ShortTmpl == "" {
+		t.Errorf("Expected ShortTmpl to have a default value")
 	}
 	if config.ForecastTmpl == "" {
 		t.Errorf("Expected ForecastTmpl to have a default value")
@@ -182,8 +182,8 @@ func TestMergeConfigs(t *testing.T) {
 		APIKey:     "base_key",
 		Location:   "BaseCity",
 		Logger:     false,
-		OutputType: "table",
-		CurrentTmpl: "base_json_template",
+		Output: "table",
+		ShortTmpl: "base_json_template",
 		ForecastTmpl: "base_json_forecast",
 	}
 
@@ -191,8 +191,8 @@ func TestMergeConfigs(t *testing.T) {
 		APIKey:     "custom_key",
 		Location:   "CustomCity",
 		Logger:     true,
-		OutputType: "json",
-		CurrentTmpl: "custom_json_template",
+		Output: "json",
+		ShortTmpl: "custom_json_template",
 		ForecastTmpl: "custom_json_forecast",
 	}
 
@@ -207,11 +207,11 @@ func TestMergeConfigs(t *testing.T) {
 	if baseConfig.Logger != true {
 		t.Errorf("Expected Logger to be true, got %v", baseConfig.Logger)
 	}
-	if baseConfig.OutputType != "json" {
-		t.Errorf("Expected OutputType to be 'json', got '%s'", baseConfig.OutputType)
+	if baseConfig.Output != "json" {
+		t.Errorf("Expected Output to be 'json', got '%s'", baseConfig.Output)
 	}
-	if baseConfig.CurrentTmpl != "custom_json_template" {
-		t.Errorf("Expected CurrentTmpl to be 'custom_json_template', got '%s'", baseConfig.CurrentTmpl)
+	if baseConfig.ShortTmpl != "custom_json_template" {
+		t.Errorf("Expected ShortTmpl to be 'custom_json_template', got '%s'", baseConfig.ShortTmpl)
 	}
 	if baseConfig.ForecastTmpl != "custom_json_forecast" {
 		t.Errorf("Expected ForecastTmpl to be 'custom_json_forecast', got '%s'", baseConfig.ForecastTmpl)
@@ -233,7 +233,7 @@ func TestParseCommand(t *testing.T) {
 	// Test with output flag
 	cmd.Flags().Set("output", "json")
 	config.ParseCommand(cmd, args, false)
-	if config.OutputType != "json" {
-		t.Errorf("Expected OutputType to be 'json', got '%s'", config.OutputType)
+	if config.Output != "json" {
+		t.Errorf("Expected Output to be 'json', got '%s'", config.Output)
 	}
 }

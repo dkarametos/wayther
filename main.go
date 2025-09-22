@@ -55,7 +55,6 @@ func runApp(cmd *cobra.Command, args []string, configPath ConfigPath, weatherPro
 	cleanCache, _ := cmd.Flags().GetBool("clean-cache")
 	if cleanCache {
 		weatherProvider.CleanCache(time.Hour) // Clean entries older than 1 hour
-		fmt.Println("Cache cleaned.")
 	}
 
 	config, err := configProvider.LoadConfig(configPath)
@@ -83,7 +82,7 @@ func runApp(cmd *cobra.Command, args []string, configPath ConfigPath, weatherPro
 // It considers whether the output is to a terminal or if JSON output is requested.
 func handleExitError(config *Config, err error, isTerminal bool) error {
 
-	if (config == nil && !isTerminal) || (config != nil && config.OutputType == "json") {
+	if (config == nil && !isTerminal) || (config != nil && config.Output == "json") {
 		fmt.Printf("{\"text\":\"N/A ☢\",\"tooltip\":\" error fetching weather: %s \"}", err)
 		return nil
 	}
