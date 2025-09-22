@@ -59,7 +59,7 @@ var weatherCodeToEmojiMap = map[int]string{
   1282: "",
 }
 
-// getEmojiForWeatherCode returns the emoji for a given condition code
+// getEmojiForWeatherCode returns the emoji for a given condition code.
 func getEmojiForWeatherCode(code int) string {
 	if emoji, ok := weatherCodeToEmojiMap[code]; ok {
 		return emoji
@@ -67,16 +67,17 @@ func getEmojiForWeatherCode(code int) string {
 	return "❓" // Default emoji for unknown codes
 }
 
+// weatherAPIURL is the base URL for the WeatherAPI forecast endpoint.
 var weatherAPIURL = "https://api.weatherapi.com/v1/forecast.json"
 
-// WeatherAPIResponse represents the top-level structure of the WeatherAPI forecast.json response
+// WeatherAPIResponse represents the top-level structure of the WeatherAPI forecast.json response.
 type WeatherAPIResponse struct {
 	Location Location `json:"location"`
 	Current  Current  `json:"current"`
 	Forecast Forecast `json:"forecast"`
 }
 
-// Location represents the location data
+// Location represents the location data.
 type Location struct {
 	Name           string  `json:"name"`
 	Region         string  `json:"region"`
@@ -88,7 +89,7 @@ type Location struct {
 	Localtime      string  `json:"localtime"`
 }
 
-// Current represents the current weather conditions
+// Current represents the current weather conditions.
 type Current struct {
 	LastUpdatedEpoch int64     `json:"last_updated_epoch"`
 	LastUpdated      string    `json:"last_updated"`
@@ -121,7 +122,7 @@ type Current struct {
 	GustKph          float64   `json:"gust_kph"`
 }
 
-// Condition represents the weather condition details
+// Condition represents the weather condition details.
 type Condition struct {
 	Text  string `json:"text"`
 	Icon  string `json:"icon"`
@@ -129,12 +130,12 @@ type Condition struct {
 	Emoji string `json:"emoji,omitempty"`
 }
 
-// Forecast represents the forecast data
+// Forecast represents the forecast data.
 type Forecast struct {
 	Forecastday []Forecastday `json:"forecastday"`
 }
 
-// Forecastday represents a single day in the forecast
+// Forecastday represents a single day in the forecast.
 type Forecastday struct {
 	Date      string `json:"date"`
 	DateEpoch int64  `json:"date_epoch"`
@@ -143,7 +144,7 @@ type Forecastday struct {
 	Hour      []Hour `json:"hour"`
 }
 
-// Day represents the daily summary
+// Day represents the daily summary.
 type Day struct {
 	MaxtempC          float64   `json:"maxtemp_c"`
 	MaxtempF          float64   `json:"maxtemp_f"`
@@ -167,7 +168,7 @@ type Day struct {
 	Uv                float64   `json:"uv"`
 }
 
-// Astro represents astronomical data
+// Astro represents astronomical data.
 type Astro struct {
 	Sunrise          string `json:"sunrise"`
 	Sunset           string `json:"sunset"`
@@ -179,7 +180,7 @@ type Astro struct {
 	IsSunUp          int    `json:"is_sun_up"`
 }
 
-// Hour represents hourly forecast data
+// Hour represents hourly forecast data.
 type Hour struct {
 	TimeEpoch    int64     `json:"time_epoch"`
 	Time         string    `json:"time"`
@@ -275,8 +276,13 @@ func (p *weatherapiProvider) GetWeather(c *Config) (*WeatherAPIResponse, error) 
 	return &weatherResp, nil
 }
 
-// toWeather maps the WeatherAPIResponse to the Weather struct.
-func (p *weatherapiProvider)toWeather(w *WeatherAPIResponse) *Weather {
+// CleanCache removes stale entries from the cache.
+func (p *weatherapiProvider) CleanCache(maxAge time.Duration) {
+	p.cache.Clean(maxAge)
+}
+
+// ToWeather maps the WeatherAPIResponse to the Weather struct.
+func (p *weatherapiProvider) ToWeather(w *WeatherAPIResponse) *Weather {
 	var hourlyForecasts []HourlyForecast
 	if len(w.Forecast.Forecastday) > 0 {
 		for _, forecastday := range w.Forecast.Forecastday {

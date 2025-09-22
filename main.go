@@ -36,6 +36,7 @@ Configuration:
 		weatherProvider := &weatherapiProvider{cache: cache}
 		configProvider := &FileConfigProvider{}
 		isTerminal := isatty.IsTerminal(os.Stdout.Fd())
+
 		return runApp(cmd, args, configPath, weatherProvider, configProvider, isTerminal, time.Now)
 	},
 }
@@ -48,57 +49,52 @@ func init() {
 	rootCmd.Flags().BoolP(  "clean-cache",    "C", false,   "Clean cache entries older than 1h")
 }
 
+// runApp is the main application logic.
 func runApp(cmd *cobra.Command, args []string, configPath ConfigPath, weatherProvider WeatherProvider, configProvider ConfigProvider, isTerminal bool, nowFunc func() time.Time) error {
 
 	cleanCache, _ := cmd.Flags().GetBool("clean-cache")
 	if cleanCache {
-		cache, err := NewCache(configPath.GetPath())
-		if err != nil {
-			return err
-		}
-		cache.Clean(time.Hour) // Clean entries older than 1 hour
+		weatherProvider.CleanCache(time.Hour) // Clean entries older than 1 hour
 		fmt.Println("Cache cleaned.")
 	}
 
 	config, err := configProvider.LoadConfig(configPath)
 	if err != nil {
-		exitOnJSON(config, err)
-		return err
+		return handleExitError(config, err, isTerminal) 
 	}
-	config.ParseCommand(cmd, args, isTerminal)
 
+	config.ParseCommand(cmd, args, isTerminal)
 	weather, err := NewWeather(weatherProvider, config)
 	if err != nil {
-		exitOnJSON(config, err)
-		return err
+		return handleExitError(config, err, isTerminal) 
 	}
 
-
-	// Format output based on flags or TTY
-	if config.OutputType == "json" {
-		fmt.Println(formatJSON(weather, config, nowFunc))
-	} else {
-		fmt.Println(formatTable(weather, config, nowFunc))
+	// Format output
+	output, err := FormatOutput(weather, config, nowFunc)
+	if err != nil {
+		return handleExitError(config, err, isTerminal)
 	}
+	fmt.Println(output)
 
 	return nil
 }
 
-func exitOnJSON(config *Config, err error ) {
-	
-	if config == nil {
-		return
+// handleExitError provides a centralized way to handle errors and exit the application.
+// It considers whether the output is to a terminal or if JSON output is requested.
+func handleExitError(config *Config, err error, isTerminal bool) error {
+
+	if (config == nil && !isTerminal) || (config != nil && config.OutputType == "json") {
+		fmt.Printf("{\"text\":\"N/A ☢\",\"tooltip\":\" error fetching weather: %s \"}", err)
+		return nil
 	}
 
-	if config.OutputType == "json" {
-		fmt.Printf("{\"text\":\"N/A ☢\",\"tooltip\":\" error fetching weather: %s \"}", err)
-		os.Exit(0)
-	}
+	return err
 }
 
+// main is the entry point of the application.
 func main() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }

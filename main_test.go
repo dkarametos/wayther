@@ -39,7 +39,7 @@ func (m *MockWeatherProvider) GetWeather(config *Config) (*WeatherAPIResponse, e
 	return m.mockResponse, m.err
 }
 
-func (m *MockWeatherProvider) toWeather(w *WeatherAPIResponse) *Weather {
+func (m *MockWeatherProvider) ToWeather(w *WeatherAPIResponse) *Weather {
 	var hourlyForecasts []HourlyForecast
 	if len(w.Forecast.Forecastday) > 0 {
 		for _, forecastday := range w.Forecast.Forecastday {
@@ -63,6 +63,10 @@ func (m *MockWeatherProvider) toWeather(w *WeatherAPIResponse) *Weather {
 		},
 		HourlyForecast: hourlyForecasts,
 	}
+}
+
+func (m *MockWeatherProvider) CleanCache(maxAge time.Duration) {
+	// Mock implementation - do nothing or log if needed for testing cache cleaning logic
 }
 
 type MockConfigProvider struct {
@@ -145,16 +149,96 @@ func TestAppOutput(t *testing.T) {
 }
 
 func TestExecutionError(t *testing.T) {
-	weatherProvider := &MockWeatherProvider{err: errors.New("mock weather error")}
-	configProvider := &MockConfigProvider{mockConfig: &Config{}}
+	t.Run("Weather Provider Error - Terminal Output", func(t *testing.T) {
+		weatherProvider := &MockWeatherProvider{err: errors.New("mock weather error")}
+		configProvider := &MockConfigProvider{mockConfig: &Config{OutputType: "table"}} // Simulate terminal output
 
-	cmd := &cobra.Command{}
-	err := runApp(cmd, []string{"some-location"}, ConfigPath{}, weatherProvider, configProvider, true, time.Now)
-	assert.Error(t, err, "Expected an error to be returned from runApp()")
-	assert.EqualError(t, err, "mock weather error", "The error message should be the one from the mock")
+		err := runApp(&cobra.Command{}, []string{"some-location"}, ConfigPath{}, weatherProvider, configProvider, true, time.Now)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "mock weather error")
+	})
 
-	configProvider = &MockConfigProvider{err: errors.New("mock config load error")}
-	err = runApp(cmd, []string{"some-location"}, ConfigPath{}, weatherProvider, configProvider, true, time.Now)
-	assert.Error(t, err, "Expected an error to be returned from runApp()")
-	assert.EqualError(t, err, "mock config load error", "The error message should be the one from the mock")
+	t.Run("Weather Provider Error - JSON Output", func(t *testing.T) {
+		// Redirect stdout
+		oldStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		weatherProvider := &MockWeatherProvider{err: errors.New("mock weather error")}
+		configProvider := &MockConfigProvider{mockConfig: &Config{OutputType: "json"}} // Simulate JSON output
+
+		err := runApp(&cobra.Command{}, []string{"some-location"}, ConfigPath{}, weatherProvider, configProvider, false, time.Now)
+		assert.NoError(t, err)
+
+		// Restore stdout and read the captured output
+		w.Close()
+		os.Stdout = oldStdout
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		actualOutput := buf.String()
+
+		assert.Contains(t, actualOutput, `{"text":"N/A ☢","tooltip":" error fetching weather: mock weather error "}`)
+	})
+
+	t.Run("Config Load Error - Terminal Output", func(t *testing.T) {
+		weatherProvider := &MockWeatherProvider{}
+		configProvider := &MockConfigProvider{err: errors.New("mock config load error"), mockConfig: &Config{OutputType: "table"}} // Simulate terminal output
+
+		err := runApp(&cobra.Command{}, []string{"some-location"}, ConfigPath{}, weatherProvider, configProvider, true, time.Now)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "mock config load error")
+	})
+
+	t.Run("Config Load Error - JSON Output", func(t *testing.T) {
+		// Redirect stdout
+		oldStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		weatherProvider := &MockWeatherProvider{}
+		configProvider := &MockConfigProvider{err: errors.New("mock config load error"), mockConfig: &Config{OutputType: "json"}} // Simulate JSON output
+
+		err := runApp(&cobra.Command{}, []string{"some-location"}, ConfigPath{}, weatherProvider, configProvider, false, time.Now)
+		assert.NoError(t, err)
+
+		// Restore stdout and read the captured output
+		w.Close()
+		os.Stdout = oldStdout
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		actualOutput := buf.String()
+
+		assert.Contains(t, actualOutput, `{"text":"N/A ☢","tooltip":" error fetching weather: mock config load error "}`)
+	})
+
+	t.Run("Config Load Error - Nil Config - Terminal Output", func(t *testing.T) {
+		weatherProvider := &MockWeatherProvider{}
+		configProvider := &MockConfigProvider{err: errors.New("mock config load error"), mockConfig: nil} // Simulate nil config
+
+		err := runApp(&cobra.Command{}, []string{"some-location"}, ConfigPath{}, weatherProvider, configProvider, true, time.Now)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "mock config load error")
+	})
+
+	t.Run("Config Load Error - Nil Config - Non-Terminal Output", func(t *testing.T) {
+		// Redirect stdout
+		oldStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		weatherProvider := &MockWeatherProvider{}
+		configProvider := &MockConfigProvider{err: errors.New("mock config load error"), mockConfig: nil} // Simulate nil config
+
+		err := runApp(&cobra.Command{}, []string{"some-location"}, ConfigPath{}, weatherProvider, configProvider, false, time.Now)
+		assert.NoError(t, err)
+
+		// Restore stdout and read the captured output
+		w.Close()
+		os.Stdout = oldStdout
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		actualOutput := buf.String()
+
+		assert.Contains(t, actualOutput, `{"text":"N/A ☢","tooltip":" error fetching weather: mock config load error "}`)
+	})
 }

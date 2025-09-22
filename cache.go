@@ -19,7 +19,7 @@ type Cache struct {
 	filePath string
 }
 
-// NewCache creates a new Cache instance.
+// NewCache creates a new Cache instance and loads the cache from disk.
 func NewCache(configPath string) (*Cache, error) {
 	cachePath := filepath.Join(filepath.Dir(configPath), "cache.json")
 	cache := &Cache{
@@ -32,7 +32,7 @@ func NewCache(configPath string) (*Cache, error) {
 	return cache, nil
 }
 
-// load reads the cache file from disk.
+// load reads the cache file from disk and unmarshals it into the Cache struct.
 func (c *Cache) load() error {
 	data, err := os.ReadFile(c.filePath)
 	if err != nil {
@@ -41,7 +41,7 @@ func (c *Cache) load() error {
 	return json.Unmarshal(data, &c.Entries)
 }
 
-// save writes the cache to disk.
+// save writes the cache to disk as a JSON file.
 func (c *Cache) save() error {
 	data, err := json.MarshalIndent(c.Entries, "", "  ")
 	if err != nil {
@@ -56,7 +56,7 @@ func (c *Cache) Get(location string) (*CacheEntry, bool) {
 	return &entry, found
 }
 
-// Set adds or updates a cache entry.
+// Set adds or updates a cache entry and saves the cache to disk.
 func (c *Cache) Set(location string, weather *WeatherAPIResponse) error {
 	c.Clean(time.Hour)
 	c.Entries[location] = CacheEntry{
@@ -71,11 +71,12 @@ func (e *CacheEntry) IsStale(duration time.Duration) bool {
 	return time.Since(e.Timestamp) > duration
 }
 
-// Clean removes stale entries from the cache.
+// Clean removes stale entries from the cache and saves the cache to disk.
 func (c *Cache) Clean(duration time.Duration) {
 	for location, entry := range c.Entries {
 		if entry.IsStale(duration) {
 			delete(c.Entries, location)
 		}
 	}
+	c.save()
 }

@@ -1,12 +1,15 @@
 package main
 
+import (
+	"time"
+)
+
 // WeatherProvider is an interface for fetching weather data.
 type WeatherProvider interface {
 	GetWeather(config *Config) (*WeatherAPIResponse, error)
-	toWeather(w *WeatherAPIResponse) (*Weather)
+	ToWeather(w *WeatherAPIResponse) *Weather
+	CleanCache(maxAge time.Duration)
 }
-
-// Weather holds the simplified weather data for formatting.
 
 // WeatherCurrent holds simplified current weather conditions.
 type WeatherCurrent struct {
@@ -36,5 +39,5 @@ func NewWeather(provider WeatherProvider, config *Config) (*Weather, error) {
 	if err != nil {
 		return nil, err
 	}
-	return provider.toWeather(weatherAPIResponse), nil
+	return provider.ToWeather(weatherAPIResponse), nil
 }

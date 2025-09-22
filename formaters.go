@@ -11,8 +11,16 @@ import (
 	"github.com/jedib0t/go-pretty/v6/table"
 )
 
-// formatTable formats the weather data into a human-readable table
-func formatTable(weather *Weather, config *Config, nowFunc func() time.Time) string {
+// FormatOutput formats the weather data based on the specified output type in the config.
+func FormatOutput(weather *Weather, config *Config, nowFunc func() time.Time) (string, error) {
+	if config.OutputType == "json" {
+		return formatJSON(weather, config, nowFunc)
+	}
+	return formatTable(weather, config, nowFunc)
+}
+
+// formatTable formats the weather data into a human-readable table.
+func formatTable(weather *Weather, config *Config, nowFunc func() time.Time) (string, error) {
 	t := table.NewWriter()
 	t.SetStyle(table.StyleLight)
 
@@ -21,15 +29,14 @@ func formatTable(weather *Weather, config *Config, nowFunc func() time.Time) str
 	t.AppendSeparator()
 	currentLine, err := renderTemplateToString("table-current", config.CurrentTmpl, weather.Current)
 	if err != nil {
-		// Log the error, but don't stop execution for formatting errors
-		fmt.Printf("Error rendering current template: %v\n", err)
+		return "", fmt.Errorf("error rendering current template: %w", err)
 	}
 	t.AppendRow(table.Row{currentLine})
 
 	// Location section
 	locationLine, err := renderTemplateToString("table-location", config.LocationTmpl, weather.Current)
 	if err != nil {
-		fmt.Printf("Error rendering location template: %v\n", err)
+		return "", fmt.Errorf("error rendering location template: %w", err)
 	}
 	t.AppendRow(table.Row{locationLine})
 
@@ -52,7 +59,7 @@ func formatTable(weather *Weather, config *Config, nowFunc func() time.Time) str
 
 			hourlyLineContent, err := renderTemplateToString("table-hourly", config.ForecastTmpl, hour)
 			if err != nil {
-				fmt.Printf("Error rendering hourly template: %v\n", err)
+				return "", fmt.Errorf("error rendering hourly template: %w", err)
 			}
 			hourlyLine := fmt.Sprintf("%s : %s", timeVal.Format("15:04"), hourlyLineContent)
 			t.AppendRow(table.Row{hourlyLine})
@@ -65,16 +72,15 @@ func formatTable(weather *Weather, config *Config, nowFunc func() time.Time) str
 		}
 	}
 
-	return t.Render()
+	return t.Render(), nil
 }
 
 
-// formatJSON formats the weather data into a JSON string
-func formatJSON(weather *Weather, config *Config, nowFunc func() time.Time) string {
+// formatJSON formats the weather data into a JSON string.
+func formatJSON(weather *Weather, config *Config, nowFunc func() time.Time) (string, error) {
 	text, err := renderTemplateToString("json-text", config.CurrentTmpl, weather.Current)
 	if err != nil {
-		fmt.Printf("Error rendering json text template: %v\n", err)
-		text = "" // Fallback to empty string on error
+		return "", fmt.Errorf("error rendering json text template: %w", err)
 	}
 
 	// Construct the 'tooltip' field
@@ -92,8 +98,7 @@ func formatJSON(weather *Weather, config *Config, nowFunc func() time.Time) stri
 
 			tooltipLineContent, err := renderTemplateToString("json-tooltip", config.ForecastTmpl, hour)
 			if err != nil {
-				fmt.Printf("Error rendering json tooltip template: %v\n", err)
-				tooltipLineContent = "" // Fallback to empty string on error
+				return "", fmt.Errorf("error rendering json tooltip template: %w", err)
 			}
 			tooltipLine := fmt.Sprintf(" %s: %s ", timeVal.Format("15:04"), tooltipLineContent)
 			tooltip = append(tooltip, tooltipLine)
@@ -118,11 +123,10 @@ func formatJSON(weather *Weather, config *Config, nowFunc func() time.Time) stri
 	// Marshal to JSON
 	jsonOutput, err := json.Marshal(outputStruct)
 	if err != nil {
-		fmt.Printf("Error marshalling JSON output: %v\n", err)
-		return "{}" // Fallback to empty JSON object on error
+		return "", fmt.Errorf("error marshalling JSON output: %w", err)
 	}
 
-	return string(jsonOutput)
+	return string(jsonOutput), nil
 }
 
 // renderTemplateToString parses and executes a template, returning the result as a string.
